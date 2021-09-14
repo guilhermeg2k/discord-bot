@@ -3,21 +3,29 @@ import youtube_dl
 import urllib.request
 import re
 
-def download_song(folder, url):
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': f'{folder}/%(id)s.%(ext)s',
-            }
-        try:
-            ydl = youtube_dl.YoutubeDL(ydl_opts)
-            song_info = ydl.extract_info(url)
-            file_name = f'{song_info["id"]}.{song_info["ext"]}'
-            ydl.download([url])
-            return f'{folder}/{file_name}'
-        except:
-            raise(f'Failed to download song url: {url}')
+def download_song(folder: str, url: str) -> str:
+    """
+        Download a video from youtube
+        Return its saved path
+    """
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': f'{folder}/%(id)s.%(ext)s',
+        }
+    try:
+        ydl = youtube_dl.YoutubeDL(ydl_opts)
+        song_info = ydl.extract_info(url)
+        file_name = f'{song_info["id"]}.{song_info["ext"]}'
+        ydl.download([url])
+        return f'{folder}/{file_name}'
+    except:
+        raise(f'Failed to download song url: {url}')
 
-def get_song_url(song_query):
+def get_song_url(song_query: str) -> str:
+    """
+        Search for a song query on youtube
+        Return its url
+    """
     try:
         song_query = urllib.parse.quote_plus(song_query)
         html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={song_query}")
