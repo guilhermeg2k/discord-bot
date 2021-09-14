@@ -23,14 +23,14 @@ class Bot(commands.Bot):
                 await ctx.send("Você não está em um canal de voz")
                 return
 
-            voice_channel = ctx.author.voice.channel
+            user_voice_channel = ctx.author.voice.channel
             queue = self.get_queue(ctx)
 
             if ctx.voice_client is None:
-                await voice_channel.connect()
+                await user_voice_channel.connect()
 
             voice_client = ctx.voice_client
-            if voice_client.channel == voice_channel:
+            if voice_client.channel == user_voice_channel:
                 song_url = get_song_url(song)
                 song_path = download_song('songs', song_url)
                 queue.put(song_path)
@@ -41,6 +41,7 @@ class Bot(commands.Bot):
 
             else:
                 await ctx.send("O bot já está conectado em outro canal!")
+        
 
         @self.command()
         async def pause(ctx):
@@ -57,6 +58,12 @@ class Bot(commands.Bot):
             voice_client = ctx.voice_client
             voice_client.resume()
 
+        @self.command()
+        async def leave(ctx):
+            user_voice_channel = ctx.author.voice.channel
+            voice_client = ctx.voice_client
+            if voice_client.channel == user_voice_channel:
+                await voice_client.disconnect()
         self.run(self.token)
 
     def get_queue(self, ctx: commands.Context) -> Queue:
