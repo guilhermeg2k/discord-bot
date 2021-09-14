@@ -7,7 +7,7 @@ from queue import Queue
 from asyncio import sleep
 
 class Bot(commands.Bot):
-    def __init__(self, command_prefix):
+    def __init__(self, command_prefix: str):
         super().__init__(command_prefix=command_prefix)
         load_dotenv()
         self.token = os.getenv('TOKEN')
@@ -18,7 +18,7 @@ class Bot(commands.Bot):
             print(f"{self.user.display_name} is connected")
 
         @self.command()
-        async def play(ctx, *, song):
+        async def play(ctx: commands.Context, *, song: str):
             if ctx.author.voice is None:
                 await ctx.send("Você não está em um canal de voz")
                 return
@@ -44,22 +44,22 @@ class Bot(commands.Bot):
         
 
         @self.command()
-        async def pause(ctx):
+        async def pause(ctx: commands.Context):
             voice_client = ctx.voice_client
             voice_client.pause()
 
         @self.command()
-        async def next(ctx):
+        async def next(ctx: commands.Context):
             voice_client = ctx.voice_client
             voice_client.stop()
 
         @self.command()
-        async def resume(ctx):
+        async def resume(ctx: commands.Context):
             voice_client = ctx.voice_client
             voice_client.resume()
 
         @self.command()
-        async def leave(ctx):
+        async def leave(ctx: commands.Context):
             user_voice_channel = ctx.author.voice.channel
             voice_client = ctx.voice_client
             if voice_client.channel == user_voice_channel:
@@ -78,7 +78,7 @@ class Bot(commands.Bot):
 
         return self.song_queue[ctx.guild.id]
 
-    async def play_queue(self, ctx):
+    async def play_queue(self, ctx: commands.Context):
         queue = self.get_queue(ctx)
         voice_client = ctx.voice_client
         while not queue.empty():
