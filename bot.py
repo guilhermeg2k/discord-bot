@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from youtube import download_song, get_song_url
 from queue import Queue
 from asyncio import sleep
+from song import Song
+from datetime import timedelta
 
 class Bot(commands.Bot):
     def __init__(self, command_prefix: str):
@@ -18,7 +20,7 @@ class Bot(commands.Bot):
             print(f"{self.user.display_name} is connected")
 
         @self.command()
-        async def play(ctx: commands.Context, *, song: str):
+        async def play(ctx: commands.Context, *, song_name: str):
             if ctx.author.voice is None:
                 await ctx.send("Você não está em um canal de voz")
                 return
@@ -31,12 +33,13 @@ class Bot(commands.Bot):
 
             voice_client = ctx.voice_client
             if voice_client.channel == user_voice_channel:
-                song_url = get_song_url(song)
-                song_path = download_song('songs', song_url)
-                queue.put(song_path)
-                print(queue.qsize())  # Queue size
+                song_url = get_song_url(song_name)
+                song = download_song('songs', song_url)
+                queue.put(song)
 
-                if not voice_client.is_playing():
+                if voice_client.is_playing():
+                    await ctx.message.channel.send(f"```Adicionado a fila de reprodução:\n{song.title}\nPosição: {len(queue.queue)}```")
+                else:
                     await self.play_queue(ctx)
 
             else:
@@ -64,8 +67,19 @@ class Bot(commands.Bot):
             voice_client = ctx.voice_client
             if voice_client.channel == user_voice_channel:
                 await voice_client.disconnect()
-        self.run(self.token)
 
+        @self.command()
+        async def list(ctx: commands.Context):
+            queue = self.get_queue(ctx)
+            list_buffer = "```Fila de músicas:\n"
+            queue_duration = 0 
+            for idx, song in enumerate(queue.queue, 1):
+                list_buffer += f"{idx} - " + song.title + "\t: " + str(timedelta(seconds=song.duration)) + "\n"
+                queue_duration += song.duration
+            list_buffer += f"Duração da fila: {str(timedelta(seconds=queue_duration))}```"
+            await ctx.message.channel.send(list_buffer)
+
+        self.run(self.token)
     def get_queue(self, ctx: commands.Context) -> Queue:
         """
         Checks if queue exists
@@ -82,8 +96,8 @@ class Bot(commands.Bot):
         queue = self.get_queue(ctx)
         voice_client = ctx.voice_client
         while not queue.empty():
-            current_song_path = queue.get()
-            print(f"Reproduzindo : {current_song_path}")
-            voice_client.play(FFmpegPCMAudio(current_song_path))
+            current_song = queue.get()
+            await ctx.message.channel.send(f"```Reproduzindo: \n{current_song.title}```")
+            voice_client.play(FFmpegPCMAudio(current_song.path))
             while voice_client.is_playing():
                 await sleep(1)
