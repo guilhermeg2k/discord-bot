@@ -7,4 +7,4 @@ class Song():
         self.duration = song_info['duration']
 
     def set_folder(self, folder: str ) -> None:
-        self.path = folder + '\\' + self.path 
+        self.path = folder + '/' + self.path 
