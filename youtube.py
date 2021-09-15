@@ -1,4 +1,5 @@
 from logging import exception
+from typing import Dict, List
 import youtube_dl
 import urllib.request
 import re
@@ -63,4 +64,23 @@ def get_song_url_from_spotify(url: str) -> str:
         song_url = get_song_youtube_url(f'{song_info[0]} {song_info[1]}')
         return song_url
     except:
-        raise Exception(f'Failed to get a video url from a spotify')
+        raise Exception(f'Failed to get a video url from a spotify track with url: "{url}"')
+
+def get_youtube_playlist_songlist(url: str) -> List[str]:
+    """
+        Returns an array of videos urls 
+        from a youtube playlist url
+    """
+    try:
+        html = urllib.request.urlopen(url)
+        video_ids = re.findall(r"watch\?v=(\S{11})", html.read().decode())
+        video_ids = list(dict.fromkeys(video_ids))
+        if len(video_ids) > 0:
+            video_urls = []
+            for id in video_ids:
+                video_urls.append(f'https://www.youtube.com/watch?v={id}')
+            return video_urls
+        else:
+            raise Exception(f'No videos ids founded on url {url}')
+    except:
+        raise Exception(f'Failed to get songlist from playlist with url: "{url}"')
