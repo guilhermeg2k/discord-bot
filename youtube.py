@@ -5,6 +5,7 @@ import urllib.request
 import re
 from song import Song
 
+
 def download_song(folder: str, url: str) -> Song:
     """
         Download a video from youtube
@@ -17,13 +18,20 @@ def download_song(folder: str, url: str) -> Song:
     try:
         ydl = youtube_dl.YoutubeDL(ydl_opts)
         song_info = ydl.extract_info(url)
-        new_song = Song(song_info)
-        new_song.set_folder(folder)
-        #file_name = f'{song_info["id"]}.{song_info["ext"]}'
+        
+        new_song = Song(
+            id = song_info['id'],
+            path = f'{folder}/{song_info["id"]}.{song_info["ext"]}',
+            title = song_info['title'],
+            duration = song_info['duration'],
+            requester = None
+        )
+
         ydl.download([url])
         return new_song
     except:
         raise(f'Failed to download song url: {url}')
+
 
 def get_song_url(song: str) -> str:
     """
@@ -35,6 +43,7 @@ def get_song_url(song: str) -> str:
         return get_song_url_from_spotify(song)
     else:
         return get_song_youtube_url(song)
+
 
 def get_song_youtube_url(song_query: str) -> str:
     """
@@ -60,11 +69,14 @@ def get_song_url_from_spotify(url: str) -> str:
     try:
         html = urllib.request.urlopen(url)
         html_decoded = html.read().decode()
-        song_info = re.findall(r"<h1.*>.*<span.*>(.*)</span.*></h1>", html_decoded)
+        song_info = re.findall(
+            r"<h1.*>.*<span.*>(.*)</span.*></h1>", html_decoded)
         song_url = get_song_youtube_url(f'{song_info[0]} {song_info[1]}')
         return song_url
     except:
-        raise Exception(f'Failed to get a video url from a spotify track with url: "{url}"')
+        raise Exception(
+            f'Failed to get a video url from a spotify track with url: "{url}"')
+
 
 def get_youtube_playlist_songlist(url: str) -> List[str]:
     """
@@ -83,4 +95,5 @@ def get_youtube_playlist_songlist(url: str) -> List[str]:
         else:
             raise Exception(f'No videos ids founded on url {url}')
     except:
-        raise Exception(f'Failed to get songlist from playlist with url: "{url}"')
+        raise Exception(
+            f'Failed to get songlist from playlist with url: "{url}"')
