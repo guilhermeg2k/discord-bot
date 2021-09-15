@@ -35,8 +35,8 @@ class Bot(commands.Bot):
             if voice_client.channel == user_voice_channel:
                 song_url = get_song_url(song_name)
                 song = download_song('songs', song_url)
+                song.set_requester(ctx.message.author.display_name)
                 queue.put(song)
-
                 if voice_client.is_playing():
                     await ctx.message.channel.send(f"```Adicionado a fila de reprodução:\n{song.title}\nPosição: {len(queue.queue)}```")
                 else:
@@ -97,7 +97,7 @@ class Bot(commands.Bot):
         voice_client = ctx.voice_client
         while not queue.empty():
             current_song = queue.get()
-            await ctx.message.channel.send(f"```Reproduzindo: \n{current_song.title}```")
+            await ctx.message.channel.send(f"```Reproduzindo: \n{current_song.title} adicionada por {current_song.requester}```")
             voice_client.play(FFmpegPCMAudio(current_song.path))
             while voice_client.is_playing():
                 await sleep(1)
