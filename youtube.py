@@ -2,12 +2,12 @@ from logging import exception
 import youtube_dl
 import urllib.request
 import re
+from song import Song
 
-
-def download_song(folder: str, url: str) -> str:
+def download_song(folder: str, url: str) -> Song:
     """
         Download a video from youtube
-        Return its saved path
+        Return a Song class with the music data
     """
     ydl_opts = {
         'format': 'bestaudio/best',
@@ -16,9 +16,11 @@ def download_song(folder: str, url: str) -> str:
     try:
         ydl = youtube_dl.YoutubeDL(ydl_opts)
         song_info = ydl.extract_info(url)
-        file_name = f'{song_info["id"]}.{song_info["ext"]}'
+        new_song = Song(song_info)
+        new_song.set_folder(folder)
+        #file_name = f'{song_info["id"]}.{song_info["ext"]}'
         ydl.download([url])
-        return f'{folder}/{file_name}'
+        return new_song
     except:
         raise(f'Failed to download song url: {url}')
 
