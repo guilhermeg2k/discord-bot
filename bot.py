@@ -7,6 +7,7 @@ from queue import Queue
 from asyncio import sleep
 from song import Song
 from datetime import timedelta
+from threading import Thread
 
 class Bot(commands.Bot):
     def __init__(self, command_prefix: str):
@@ -33,18 +34,13 @@ class Bot(commands.Bot):
 
             voice_client = ctx.voice_client
             if voice_client.channel == user_voice_channel:
-                song_url = get_song_url(song_name)
-                song = download_song('songs', song_url)
-                song.set_requester(ctx.message.author.display_name)
-                queue.put(song)
-                if voice_client.is_playing():
-                    await ctx.message.channel.send(f"```Adicionado a fila de reprodução:\n{song.title}\nPosição: {len(queue.queue)}```")
-                else:
-                    await self.play_queue(ctx)
+                song_handler = Thread(
+                    target=self.add_song, args=(song_name, ctx))
+                song_handler.daemon = True
+                song_handler.start()
 
             else:
                 await ctx.send("O bot já está conectado em outro canal!")
-        
 
         @self.command()
         async def pause(ctx: commands.Context):
@@ -92,7 +88,7 @@ class Bot(commands.Bot):
 
         return self.song_queue[ctx.guild.id]
 
-    async def play_queue(self, ctx: commands.Context):
+    async def play_queue(self, ctx: commands.Context) -> None:
         queue = self.get_queue(ctx)
         voice_client = ctx.voice_client
         while not queue.empty():
@@ -101,3 +97,19 @@ class Bot(commands.Bot):
             voice_client.play(FFmpegPCMAudio(current_song.path))
             while voice_client.is_playing():
                 await sleep(1)
+
+    def add_song(self, song_name: str, ctx: commands.Context) -> None:
+        """
+        A parallel function to search, download the song and put on the queue
+        Starts the player if it's not running
+        """
+        song_url = get_song_url(song_name)
+        song = download_song('songs', song_url)
+        song.set_requester(ctx.message.author.display_name)
+        queue = self.get_queue(ctx)
+        queue.put(song)
+        if ctx.voice_client.is_playing():
+            self.loop.create_task(ctx.message.channel.send(
+                f"```Adicionado a fila de reprodução:\n{song.title}\nPosição: {len(queue.queue)}```"))
+        else:
+            self.loop.create_task(self.play_queue(ctx))

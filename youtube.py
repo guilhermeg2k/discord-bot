@@ -14,6 +14,7 @@ def download_song(folder: str, url: str) -> Song:
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': f'{folder}/%(id)s.%(ext)s',
+        #'ratelimit': 10240, #limit download ratio (bytes)
     }
     try:
         ydl = youtube_dl.YoutubeDL(ydl_opts)
@@ -29,8 +30,8 @@ def download_song(folder: str, url: str) -> Song:
 
         ydl.download([url])
         return new_song
-    except:
-        raise(f'Failed to download song url: {url}')
+    except Exception as err:
+        print(f'[ERROR] - Failed to download song url: {url}\n Err:{err}')
 
 
 def get_song_url(song: str) -> str:
