@@ -4,7 +4,7 @@ class Song():
         self.id = id
         self.path = path
         self.title = title
-        self.duration = title
+        self.duration = duration
         self.requester = requester
 
     def set_requester(self, requester: str) -> None:
