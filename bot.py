@@ -1,13 +1,15 @@
 import os
+import re
 from discord.ext import commands
 from discord import FFmpegPCMAudio
 from dotenv import load_dotenv
-from youtube import download_song, get_song_url
+from youtube import download_song, get_song_url, get_youtube_playlist_songlist
 from queue import Queue
 from asyncio import sleep
 from song import Song
 from datetime import timedelta
 from threading import Thread
+
 
 class Bot(commands.Bot):
     def __init__(self, command_prefix: str):
@@ -21,7 +23,7 @@ class Bot(commands.Bot):
             print(f"{self.user.display_name} is connected")
 
         @self.command()
-        async def play(ctx: commands.Context, *, song_name: str):
+        async def play(ctx: commands.Context, *, play_text: str):
             if ctx.author.voice is None:
                 await ctx.send("Você não está em um canal de voz")
                 return
@@ -35,7 +37,7 @@ class Bot(commands.Bot):
             voice_client = ctx.voice_client
             if voice_client.channel == user_voice_channel:
                 song_handler = Thread(
-                    target=self.add_song, args=(song_name, ctx))
+                    target=self.play, args=(play_text, ctx))
                 song_handler.daemon = True
                 song_handler.start()
 
@@ -68,25 +70,34 @@ class Bot(commands.Bot):
         async def list(ctx: commands.Context):
             queue = self.get_queue(ctx)
             list_buffer = "```Fila de músicas:\n"
-            queue_duration = 0 
+            queue_duration = 0
             for idx, song in enumerate(queue.queue, 1):
-                list_buffer += f"{idx} - " + song.title + "\t: " + str(timedelta(seconds=song.duration)) + "\n"
+                list_buffer += f"{idx} - " + song.title + "\t: " + \
+                    str(timedelta(seconds=song.duration)) + "\n"
                 queue_duration += song.duration
             list_buffer += f"Duração da fila: {str(timedelta(seconds=queue_duration))}```"
             await ctx.message.channel.send(list_buffer)
 
         self.run(self.token)
+
     def get_queue(self, ctx: commands.Context) -> Queue:
         """
         Checks if queue exists
         Create one if it does not
         Return if exists
         """
-        self.song_queue                               #TODO Check channel id
+        self.song_queue  # TODO Check channel id
         if not ctx.guild.id in self.song_queue:
             self.song_queue[ctx.guild.id] = Queue()
 
         return self.song_queue[ctx.guild.id]
+
+    def play(self, play_text: str, ctx: commands.Context,) -> None:
+        is_youtube_playlist = re.match("https://www.youtube.com/playlist*", play_text)
+        if is_youtube_playlist:
+            self.add_playlist(play_text, ctx)
+        else:
+            self.add_song(play_text, ctx)
 
     async def play_queue(self, ctx: commands.Context) -> None:
         queue = self.get_queue(ctx)
@@ -113,3 +124,18 @@ class Bot(commands.Bot):
                 f"```Adicionado a fila de reprodução:\n{song.title}\nPosição: {len(queue.queue)}```"))
         else:
             self.loop.create_task(self.play_queue(ctx))
+
+    def add_playlist(self, play_list_url: str, ctx: commands.Context,) -> None:
+        """
+        Downloads all songs from a playlist and put them on que queue
+        """
+        songs_url = get_youtube_playlist_songlist(play_list_url)
+        self.loop.create_task(ctx.message.channel.send(
+                        f"```Playlist: {play_list_url} adicionada a fila```"))
+        for song_url in songs_url:
+            song = download_song('songs', song_url)
+            song.set_requester(ctx.message.author.display_name)
+            queue = self.get_queue(ctx)
+            queue.put(song)
+            if not ctx.voice_client.is_playing():
+                self.loop.create_task(self.play_queue(ctx))
