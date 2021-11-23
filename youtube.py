@@ -1,6 +1,6 @@
 from logging import exception
 from typing import Dict, List
-import youtube_dl
+import yt_dlp
 import urllib.request
 import re
 from song import Song
@@ -17,8 +17,8 @@ def download_song(folder: str, url: str) -> Song:
         #'ratelimit': 10240, #limit download ratio (bytes)
     }
     try:
-        ydl = youtube_dl.YoutubeDL(ydl_opts)
-        song_info = ydl.extract_info(url)
+        ydl = yt_dlp.YoutubeDL(ydl_opts)
+        song_info = ydl.extract_info(url, download=False)
         
         new_song = Song(
             id = song_info['id'],
