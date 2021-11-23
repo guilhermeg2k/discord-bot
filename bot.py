@@ -24,7 +24,7 @@ class Bot(commands.Bot):
             print(f"{self.user.display_name} is connected")
             self.loop.create_task(self.change_presence(activity=Activity(type=ActivityType.listening, name="no -play, tchama ♫")))
 
-        @self.command()
+        @self.command(aliases=['p'])
         async def play(ctx: commands.Context, *, play_text: str):
             if ctx.author.voice is None:
                 await ctx.send("Você não está em um canal de voz")
