@@ -1,12 +1,13 @@
 from logging import exception
 from typing import Dict, List
+from discord.member import Member
 import yt_dlp
 import urllib.request
 import re
-from song import Song
+from src.player.song import Song
 
 
-def download_song(folder: str, url: str) -> Song:
+def download_song(folder: str, url: str, requester: Member) -> Song:
     """
         Download a video from youtube
         Return a Song class with the music data
@@ -14,18 +15,25 @@ def download_song(folder: str, url: str) -> Song:
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': f'{folder}/%(id)s.%(ext)s',
-        #'ratelimit': 10240, #limit download ratio (bytes)
+        # 'ratelimit': 10240, #limit download ratio (bytes)
     }
     try:
         ydl = yt_dlp.YoutubeDL(ydl_opts)
         song_info = ydl.extract_info(url, download=False)
-        
+
+        song_thumbnail = None
+        for thumb in song_info['thumbnails']:
+            if thumb['preference'] == 0:
+                song_thumbnail = thumb['url']
+
         new_song = Song(
-            id = song_info['id'],
-            path = f'{folder}/{song_info["id"]}.{song_info["ext"]}',
-            title = song_info['title'],
-            duration = song_info['duration'],
-            requester = None
+            id=song_info['id'],
+            path=f'{folder}/{song_info["id"]}.{song_info["ext"]}',
+            title=song_info['title'],
+            duration=song_info['duration'],
+            requester=requester,
+            url=url,
+            thumb=song_thumbnail
         )
 
         ydl.download([url])
