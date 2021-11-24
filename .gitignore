@@ -134,7 +134,3 @@ dmypy.json
 
 # Tests
 tests/
-test_*
-
-# Project config files
-cfg/
