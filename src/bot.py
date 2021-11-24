@@ -36,7 +36,7 @@ class Bot(commands.Bot):
             await self.player.next(ctx)
             self.logger.info('O bot pulou a música.')
 
-        @self.command(aliases=['r'])
+        @self.command(aliases=['rs'])
         async def resume(ctx: commands.Context):
             await self.player.resume(ctx)
             self.logger.info('O bot voltou a reproduzir a música.')
@@ -48,5 +48,13 @@ class Bot(commands.Bot):
         @self.command(aliases=['q', 'queue'])
         async def list(ctx: commands.Context):
             await self.player.list(ctx)
+
+        @self.command(aliases=['r'])
+        async def remove(ctx: commands.Context, idx: str):
+            await self.player.remove(ctx, idx)
+        
+        @self.command(aliases=['c', 'clean'])
+        async def clear(ctx: commands.Context):
+            await self.player.clear(ctx)
 
         self.run(self.token)
