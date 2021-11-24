@@ -1,5 +1,3 @@
-import queue
-from discord.utils import get
 from src.player.youtube import download_song, get_song_url, get_youtube_playlist_songlist
 from discord.ext.commands import Context
 from discord import Embed, FFmpegPCMAudio
@@ -8,7 +6,6 @@ from datetime import timedelta
 from asyncio import sleep
 from re import match
 from os import getenv
-
 
 class Player():
     def __init__(self, bot) -> None:
@@ -29,8 +26,8 @@ class Player():
             if ctx.voice_client.channel != user_voice_channel:
                 await ctx.send("O bot já está conectado em outro canal!")
 
-        embed_msg = Embed(title=":mag_right: **Procurando**",
-                          description=f"`{play_text}`", color=0x550a8a)
+        embed_msg = Embed(title=f":mag_right: **Procurando**: `{play_text}`",
+                          color=0x550a8a)
         await ctx.send(embed=embed_msg)
 
         await self.handle_request(play_text, ctx)
@@ -42,8 +39,8 @@ class Player():
             list_buffer = ""
             queue_duration = 0
             for idx, song in enumerate(queue.queue, 1):
-                list_buffer += f"**{idx}.** *" + song.title + "*: " + \
-                    str(timedelta(seconds=song.duration)) + "\n"
+                list_buffer += f"**{idx}.** *" + song.title + "* " + \
+                    f"`{timedelta(seconds=song.duration)}`" + f' {song.requester.mention}' +"\n"
                 queue_duration += song.duration
             embed_msg = Embed(title=":play_pause: **Fila**",
                               description=list_buffer, color=0x550a8a)
@@ -53,8 +50,8 @@ class Player():
                 ctx.message.channel.send(embed=embed_msg))
             self.logger.info('O bot recuperou a fila de reprodução.')
         else:
-            embed_msg = Embed(title="Fila Vazia",
-                              description="Adicione músicas :)", color=0x550a8a)
+            embed_msg = Embed(title="Fila vazia",
+                              description="Adicione músicas :)", color=0xeb2828)
             self.bot.loop.create_task(
                 ctx.message.channel.send(embed=embed_msg))
             self.logger.info(
@@ -179,3 +176,45 @@ class Player():
         await voice_client.disconnect()
         self.logger.info('O bot desconectou do canal após reproduzir a fila.')
         return
+    
+    async def remove(self, ctx: Context, idx: str) -> None:
+        """
+        Remove song from the queue by index.
+        """
+        if ctx.author.voice is not None and ctx.voice_client is not None:
+            if ctx.voice_client.channel == ctx.author.voice.channel:
+                queue = self.get_queue(ctx)
+                if queue.empty():
+                    embed_msg = Embed(title="Fila vazia",
+                              description="Adicione músicas :)", color=0xeb2828)
+                    self.bot.loop.create_task(
+                    ctx.message.channel.send(embed=embed_msg))
+                    return
+                if idx.isnumeric() and (abs(int(idx)) <= queue.qsize()):
+                    del queue.queue[int(idx) - 1]
+                    self.logger.info(f'O bot removeu a música de posição {int(idx)-1} da fila.')
+                else:
+                    embed_msg = Embed(title=f":x: **Posição inválida**", color=0xeb2828)
+                    self.bot.loop.create_task(
+                        ctx.message.channel.send(embed=embed_msg))
+                    return
+    
+    async def clear(self, ctx: Context) -> None:
+        """
+        Clear queue.
+        """
+        if ctx.author.voice is not None and ctx.voice_client is not None:
+            if ctx.voice_client.channel == ctx.author.voice.channel:
+                queue = self.get_queue(ctx)
+
+                if queue.empty():
+                    embed_msg = Embed(title="Fila vazia",
+                              description="Adicione músicas :)", color=0xeb2828)
+                    self.bot.loop.create_task(
+                    ctx.message.channel.send(embed=embed_msg))
+                    return
+                else:
+                    with queue.mutex:
+                        queue.queue.clear()
+                    self.logger.info(f'O bot limpou a fila.')
+                
