@@ -20,21 +20,10 @@ def download_song(folder: str, url: str, requester: Member) -> Song:
     try:
         ydl = yt_dlp.YoutubeDL(ydl_opts)
         song_info = ydl.extract_info(url, download=False)
-
-        song_thumbnail = None
-        for thumb in song_info['thumbnails']:
-            if thumb['preference'] == 0:
-                song_thumbnail = thumb['url']
-
-        new_song = Song(
-            id=song_info['id'],
-            path=f'{folder}/{song_info["id"]}.{song_info["ext"]}',
-            title=song_info['title'],
-            duration=song_info['duration'],
-            requester=requester,
-            url=url,
-            thumb=song_thumbnail
-        )
+        song_info['path'] = f'{folder}/{song_info["id"]}.{song_info["ext"]}'
+        song_info['url']=url
+        
+        new_song = Song(song_info['id'], song_info)
 
         ydl.download([url])
         return new_song
