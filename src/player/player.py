@@ -41,7 +41,7 @@ class Player():
             list_buffer = ""
             queue_duration = 0
             for idx, song in enumerate(queue.queue, 1):
-                requester = await self.bot.get_user(song.requester)
+                requester = await self.bot.fetch_user(song.requester)
                 list_buffer += f"**{idx}.** *" + song.title + "* " + \
                     f"`{timedelta(seconds=song.duration)}`" + f' {requester.mention}' +"\n"
                 queue_duration += song.duration
@@ -178,7 +178,7 @@ class Player():
                 embed_msg = Embed(title=f":arrow_forward: **Reproduzindo**",
                                   description=f"`{current_song.title}`", color=0x550a8a)
                 embed_msg.set_thumbnail(url=current_song.thumb)
-                requester = await self.bot.get_user(current_song.requester)
+                requester = await self.bot.fetch_user(current_song.requester)
                 if requester:
                     embed_msg.set_footer(
                         text=f"Adicionada por {requester.display_name}" , icon_url=requester.avatar_url)
