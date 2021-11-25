@@ -81,6 +81,7 @@ class SongCache():
         self.logger.info('Mapping songs from folder')
         f = []
 
+        makedirs(self.songs_path, exist_ok=True)
         files = listdir(self.songs_path)
         for f in files:
             id = str(match(r'(.*)\..*', f).group(1))
