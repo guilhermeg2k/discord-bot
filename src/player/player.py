@@ -1,3 +1,4 @@
+from random import shuffle
 from src.player.youtube import download_song, get_song_url, get_youtube_playlist_songlist
 from src.player.songcache import SongCache
 from discord.ext.commands import Context
@@ -235,4 +236,25 @@ class Player():
                     with queue.mutex:
                         queue.queue.clear()
                     self.logger.info(f'O bot limpou a fila.')
-                
+    
+    async def shuffle(self, ctx: Context) -> None:
+        """
+        Shuffle queue.
+        """
+        if ctx.author.voice is not None and ctx.voice_client is not None:
+            if ctx.voice_client.channel == ctx.author.voice.channel:
+                queue = self.get_queue(ctx)
+            
+            if queue.empty():
+                    embed_msg = Embed(title="Fila vazia",
+                                description="Adicione músicas :)", color=0xeb2828)
+                    self.bot.loop.create_task(
+                    ctx.message.channel.send(embed=embed_msg))
+                    return
+            else:
+                with queue.mutex:
+                    shuffle(queue.queue)
+                embed_msg = Embed(title=":twisted_rightwards_arrows: **Fila embaralhada**", color=0x550a8a)
+                self.bot.loop.create_task(
+                ctx.message.channel.send(embed=embed_msg))
+                self.logger.info(f'O bot embaralhou a fila.')
