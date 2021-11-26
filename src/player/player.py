@@ -31,9 +31,11 @@ class Player():
 
         embed_msg = Embed(title=f":mag_right: **Procurando**: `{play_text}`",
                           color=0x550a8a)
-        await ctx.send(embed=embed_msg)
+        msg = await ctx.send(embed=embed_msg)
 
         await self.handle_request(play_text, ctx)
+        if msg:
+            await msg.delete()
         self.logger.info('Buscando a musica.')
 
     async def list(self, ctx: Context) -> None:
@@ -41,7 +43,7 @@ class Player():
         if not queue.empty():
             list_buffer = ""
             queue_duration = 0
-            for idx, song in enumerate(queue.queue, 1):
+            for idx, song in enumerate(list(queue.queue), 1):
                 requester = await self.bot.fetch_user(song.requester)
                 list_buffer += f"**{idx}.** *" + song.title + "* " + \
                     f"`{timedelta(seconds=song.duration)}`" + f' {requester.mention}' +"\n"
@@ -63,7 +65,7 @@ class Player():
 
     async def leave(self, ctx: Context) -> None:
         user_voice_channel = ctx.author.voice.channel
-        if ctx.voice_client.channel == user_voice_channel:
+        if ctx.voice_client and ctx.voice_client.channel == user_voice_channel:
             queue = self.get_queue(ctx)
             await ctx.voice_client.disconnect()
             with queue.mutex:
@@ -112,7 +114,7 @@ class Player():
         else:
             self.add_song(play_text, ctx)
 
-    def add_song(self, song_name: str, ctx: Context, link=False) -> None:
+    def add_song(self, song_name: str, ctx: Context, link=False, playlist=False) -> None:
         """
         A parallel function to search, download the song and put on the queue
         Starts the player if it's not running
@@ -139,11 +141,12 @@ class Player():
         self.logger.info('Musica adicionada na fila de reproducao.')
 
         if self.playing:
-            embed_msg = Embed(title=f":thumbsup: **Adicionado a fila de reprodução**",
-                                description=f"`{song.title}`", color=0x550a8a)
-            embed_msg.set_footer(text=f"Posição: {len(queue.queue)}")
-            self.bot.loop.create_task(
-                ctx.message.channel.send(embed=embed_msg))
+            if not playlist:
+                embed_msg = Embed(title=f":thumbsup: **Adicionado a fila de reprodução**",
+                                    description=f"`{song.title}`", color=0x550a8a)
+                embed_msg.set_footer(text=f"Posição: {len(queue.queue)}")
+                self.bot.loop.create_task(
+                    ctx.message.channel.send(embed=embed_msg))
             self.logger.info(
                 'O bot adicionou a música na fila de reprodução.')
         else:
@@ -155,12 +158,17 @@ class Player():
         Downloads all songs from a playlist and put them on que queue
         """
         songs_url = get_youtube_playlist_songlist(play_list_url)
+        requester = ctx.message.author
+
         embed_msg = Embed(title=f":notepad_spiral: **Playlist adicionada a fila** :thumbsup:",
                           description=f"`{play_list_url}`", color=0x550a8a)
-        embed_msg.set_footer(text=f"Adicionado por {ctx.message.author}")
+        embed_msg.set_footer(
+            text=f"Adicionada por {requester.display_name}", 
+            icon_url=requester.avatar_url)
+
         self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
         for song_url in songs_url:
-            self.add_song(song_url, ctx, link=True)
+            self.add_song(song_url, ctx, link=True, playlist=True)
         self.logger.info('O bot adicionou as músicas da playlist.')
 
     async def play_queue(self, ctx: Context) -> None:
@@ -172,24 +180,31 @@ class Player():
         voice_client = ctx.voice_client
         timer = 0
         self.logger.info('O bot está reproduzindo a fila.')
+        msg = None
+
         while timer < self.IDLE_TIMEOUT:
             while not queue.empty():
                 self.playing = True
                 current_song = queue.get()
+
                 embed_msg = Embed(title=f":arrow_forward: **Reproduzindo**",
                                   description=f"`{current_song.title}`", color=0x550a8a)
                 embed_msg.set_thumbnail(url=current_song.thumb)
                 requester = await self.bot.fetch_user(current_song.requester)
                 if requester:
                     embed_msg.set_footer(
-                        text=f"Adicionada por {requester.display_name}" , icon_url=requester.avatar_url)
-                self.bot.loop.create_task(
-                    ctx.message.channel.send(embed=embed_msg))
+                        text=f"Adicionada por {requester.display_name}", 
+                        icon_url=requester.avatar_url)
+                msg = await ctx.message.channel.send(embed=embed_msg)
+
                 voice_client.play(FFmpegPCMAudio(current_song.path))
                 while voice_client.is_playing():
                     await sleep(1)
                 self.playing = False
                 timer = 0
+                # Delete the reproduction embed msg after reproduction
+                if msg:
+                    await msg.delete()
             await sleep(1)
             timer += 1
         await voice_client.disconnect()
