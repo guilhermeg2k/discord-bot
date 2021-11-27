@@ -14,7 +14,6 @@ class Song():
         output['title'] = self.title
         output['duration'] = self.duration
         output['thumb'] = self.thumb
-        output['requester'] = self.requester
         output['url'] = self.url
         output['added_date'] = self.added_date
         output['last_played'] = self.last_played

@@ -44,9 +44,8 @@ class Player():
             list_buffer = ""
             queue_duration = 0
             for idx, song in enumerate(list(queue.queue), 1):
-                requester = await self.bot.fetch_user(song.requester)
                 list_buffer += f"**{idx}.** *" + song.title + "* " + \
-                    f"`{timedelta(seconds=song.duration)}`" + f' {requester.mention}' +"\n"
+                    f"`{timedelta(seconds=song.duration)}`" + f' {song.requester.mention}' +"\n"
                 queue_duration += song.duration
             embed_msg = Embed(title=":play_pause: **Fila**",
                               description=list_buffer, color=0x550a8a)
@@ -132,9 +131,7 @@ class Player():
             song = download_song('songs', song_url, requester=ctx.message.author)
             self.cache.add_song(song)
 
-        if not song.requester:
-            song.requester = str(ctx.message.author.id)
-
+        song.requester = ctx.message.author
         self.cache.increment_plays(id)
         queue = self.get_queue(ctx)
         queue.put(song)
@@ -190,11 +187,11 @@ class Player():
                 embed_msg = Embed(title=f":arrow_forward: **Reproduzindo**",
                                   description=f"`{current_song.title}`", color=0x550a8a)
                 embed_msg.set_thumbnail(url=current_song.thumb)
-                requester = await self.bot.fetch_user(current_song.requester)
-                if requester:
+
+                if current_song.requester:
                     embed_msg.set_footer(
-                        text=f"Adicionada por {requester.display_name}", 
-                        icon_url=requester.avatar_url)
+                        text=f"Adicionada por {current_song.requester.display_name}", 
+                        icon_url=current_song.requester.avatar_url)
                 msg = await ctx.message.channel.send(embed=embed_msg)
 
                 voice_client.play(FFmpegPCMAudio(current_song.path))
