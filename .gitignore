@@ -1,6 +1,7 @@
 pydilha.py
 teste.py
 songs/
+src/ly-test.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,3 +1,4 @@
+from os import getenv, replace
 from random import shuffle
 from src.player.youtube import download_song, get_song_url, get_youtube_playlist_songlist
 from src.player.songcache import SongCache
@@ -7,15 +8,18 @@ from queue import Queue
 from datetime import timedelta
 from asyncio import sleep
 from re import match
-from os import getenv
+from lyricsgenius import Genius
 
 class Player():
     def __init__(self, bot) -> None:
         self.song_queue = {}
+        self.current_song = {}
         self.bot = bot
         self.logger = bot.logger
         self.cache = SongCache(self.logger)
         self.IDLE_TIMEOUT = getenv("IDLE_TIMEOUT", 1)
+        self.genius_token = getenv('GENIUS_TOKEN')
+        self.genius = Genius(self.genius_token, skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"], remove_section_headers=True)
         self.playing = False
 
     async def play(self, ctx: Context, play_text: str) -> None:
@@ -182,23 +186,25 @@ class Player():
         while timer < self.IDLE_TIMEOUT:
             while not queue.empty():
                 self.playing = True
-                current_song = queue.get()
+                # current_song = queue.get()
+                self.current_song[ctx.guild.id] = queue.get()
 
                 embed_msg = Embed(title=f":arrow_forward: **Reproduzindo**",
-                                  description=f"`{current_song.title}`", color=0x550a8a)
-                embed_msg.set_thumbnail(url=current_song.thumb)
+                                  description=f"`{self.current_song[ctx.guild.id].title}`", color=0x550a8a)
+                embed_msg.set_thumbnail(url=self.current_song[ctx.guild.id].thumb)
 
-                if current_song.requester:
+                if self.current_song[ctx.guild.id].requester:
                     embed_msg.set_footer(
-                        text=f"Adicionada por {current_song.requester.display_name}", 
-                        icon_url=current_song.requester.avatar_url)
+                        text=f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}", 
+                        icon_url=self.current_song[ctx.guild.id].requester.avatar_url)
                 msg = await ctx.message.channel.send(embed=embed_msg)
 
-                voice_client.play(FFmpegPCMAudio(current_song.path))
+                voice_client.play(FFmpegPCMAudio(self.current_song[ctx.guild.id].path))
                 while voice_client.is_playing():
                     await sleep(1)
                 self.playing = False
                 timer = 0
+                del self.current_song[ctx.guild.id]
                 # Delete the reproduction embed msg after reproduction
                 if msg:
                     await msg.delete()
@@ -270,3 +276,35 @@ class Player():
                 self.bot.loop.create_task(
                 ctx.message.channel.send(embed=embed_msg))
                 self.logger.info(f'O bot embaralhou a fila.')
+
+    # TODO: Pesquisar lyrics com argumento
+    async def lyrics(self, ctx: Context) -> None:
+        """
+        Get lyrics from the song playing.
+        """
+        self.bot.loop.create_task(
+            self.get_lyrics(ctx)
+        )
+    # TODO: Refatorar o código.
+    async def get_lyrics(self, ctx: Context) -> None:
+        embed_search = Embed(title=f":mag_right: **Procurando letra da música**: `{self.current_song[ctx.guild.id].title}`",
+                          color=0x550a8a)
+        msg = await ctx.send(embed=embed_search)
+        if not self.current_song[ctx.guild.id].lyrics:
+            song = self.genius.search_song(self.current_song[ctx.guild.id].title.replace('"', '""'))
+        else:
+            song = self.current_song[ctx.guild.id]
+        if msg:
+            await msg.delete()
+        if song:
+            self.current_song[ctx.guild.id].lyrics = song.lyrics
+            embed_msg = Embed(title=f":thumbsup: **Lyrics**", 
+            description=f"{self.current_song[ctx.guild.id].lyrics.replace('leve1EmbedShare URLCopyEmbedCopy', '')}",
+            color=0x550a8a)
+            self.bot.loop.create_task(
+                ctx.message.channel.send(embed=embed_msg))
+        else:
+            embed_msg = Embed(title=f":x: **Lyrics não encontrada**", 
+            color=0xeb2828)
+            self.bot.loop.create_task(
+                    ctx.message.channel.send(embed=embed_msg))
