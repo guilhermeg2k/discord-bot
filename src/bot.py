@@ -57,4 +57,12 @@ class Bot(commands.Bot):
         async def clear(ctx: commands.Context):
             await self.player.clear(ctx)
 
+        @self.command(aliases=[''])
+        async def shuffle(ctx: commands.Context):
+            await self.player.shuffle(ctx)
+
+        @self.command(aliases=[''])
+        async def ping(ctx: commands.Context):
+            await ctx.send("Pong!")
+
         self.run(self.token)
