@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 from src.logger import Logger
 from src.player.player import Player
 
-
 class Bot(commands.Bot):
     def __init__(self, command_prefix: str):
         super().__init__(command_prefix=command_prefix)
@@ -57,11 +56,15 @@ class Bot(commands.Bot):
         async def clear(ctx: commands.Context):
             await self.player.clear(ctx)
 
-        @self.command(aliases=[''])
+        @self.command()
         async def shuffle(ctx: commands.Context):
             await self.player.shuffle(ctx)
 
-        @self.command(aliases=[''])
+        @self.command(aliases=['ly'])
+        async def lyrics(ctx: commands.Context):
+            await self.player.lyrics(ctx)
+
+        @self.command()
         async def ping(ctx: commands.Context):
             await ctx.send("Pong!")
 
