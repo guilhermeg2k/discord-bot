@@ -53,3 +53,4 @@ class Song():
         self.title = info['title']
         self.duration = info['duration']
         self.thumb = thumbnail
+        self.lyrics = None
