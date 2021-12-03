@@ -1,21 +1,33 @@
+from os import getenv
 from random import shuffle
 from src.player.youtube import download_song, get_song_url, get_youtube_playlist_songlist
 from src.player.songcache import SongCache
+from src.player.playerutils import transform_ly_search_str, transform_ly_str
 from discord.ext.commands import Context
 from discord import Embed, FFmpegPCMAudio
 from queue import Queue
 from datetime import timedelta
 from asyncio import sleep
 from re import match
-from os import getenv
+from lyricsgenius import Genius
+from requests.exceptions import HTTPError, Timeout
 
 class Player():
     def __init__(self, bot) -> None:
         self.song_queue = {}
+        self.current_song = {}
         self.bot = bot
         self.logger = bot.logger
         self.cache = SongCache(self.logger)
         self.IDLE_TIMEOUT = getenv("IDLE_TIMEOUT", 1)
+        self.genius_token = getenv('GENIUS_TOKEN')
+        self.genius = None
+        try:
+            self.genius = Genius(self.genius_token, skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"], remove_section_headers=True, verbose=True)
+        except HTTPError as e:
+            self.logger.warning(f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}')
+        except Timeout:
+            self.logger.warning(f'Timeout')
         self.playing = False
 
     async def play(self, ctx: Context, play_text: str) -> None:
@@ -182,23 +194,24 @@ class Player():
         while timer < self.IDLE_TIMEOUT:
             while not queue.empty():
                 self.playing = True
-                current_song = queue.get()
+                self.current_song[ctx.guild.id] = queue.get()
 
                 embed_msg = Embed(title=f":arrow_forward: **Reproduzindo**",
-                                  description=f"`{current_song.title}`", color=0x550a8a)
-                embed_msg.set_thumbnail(url=current_song.thumb)
+                                  description=f"`{self.current_song[ctx.guild.id].title}`", color=0x550a8a)
+                embed_msg.set_thumbnail(url=self.current_song[ctx.guild.id].thumb)
 
-                if current_song.requester:
+                if self.current_song[ctx.guild.id].requester:
                     embed_msg.set_footer(
-                        text=f"Adicionada por {current_song.requester.display_name}", 
-                        icon_url=current_song.requester.avatar_url)
+                        text=f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}", 
+                        icon_url=self.current_song[ctx.guild.id].requester.avatar_url)
                 msg = await ctx.message.channel.send(embed=embed_msg)
 
-                voice_client.play(FFmpegPCMAudio(current_song.path))
+                voice_client.play(FFmpegPCMAudio(self.current_song[ctx.guild.id].path))
                 while voice_client.is_playing():
                     await sleep(1)
                 self.playing = False
                 timer = 0
+                del self.current_song[ctx.guild.id]
                 # Delete the reproduction embed msg after reproduction
                 if msg:
                     await msg.delete()
@@ -270,3 +283,96 @@ class Player():
                 self.bot.loop.create_task(
                 ctx.message.channel.send(embed=embed_msg))
                 self.logger.info(f'O bot embaralhou a fila.')
+
+    async def lyrics(self, ctx: Context, ly_text: str = None) -> None:
+        """
+        Get lyrics from the song playing or from the string provided using Genius API.
+        """
+
+        if ly_text is None:
+            self.bot.loop.create_task(
+                self.get_lyrics(ctx)
+            )
+        else:
+            self.bot.loop.create_task(
+                self.get_lyrics_by_str(ctx, ly_text=ly_text)
+            )
+    async def get_lyrics(self, ctx: Context) -> None:
+        """
+        Get lyrics from the current song.
+        """
+        current_song = self.current_song[ctx.guild.id]
+
+        embed_search = Embed(title=f":mag_right: **Procurando letra da música**: `{current_song.title}`",
+                          color=0x550a8a)
+        msg = await ctx.send(embed=embed_search)
+
+        song = None
+        # Verifica se já existe letra da música
+        if not current_song.lyrics:
+            # Tratamento para escapar as aspas duplas
+            try:
+                if self.genius:
+                    song = self.genius.search_song(transform_ly_search_str(current_song.title))
+            except HTTPError as e:
+                self.logger.warning(f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}')
+            except Timeout:
+                self.logger.warning(f'Timeout')
+
+            current_song.lyrics = song.lyrics if song else None
+        else:
+            song = current_song
+        
+        # Apaga a mensagem após o término da busca
+        if msg:
+            await msg.delete()
+        
+        if song and song.lyrics:
+            # Envia as lyrics ao canal e retira umas tags aleatórias que a api retorna
+            self.logger.info(f'O bot enviou as lyrics da música atual ao canal')
+
+            embed_msg = Embed(title=f":pencil: **Lyrics**", 
+            description=f"**{current_song.title}**\n\n{transform_ly_str(current_song.lyrics)}",
+            color=0x550a8a)
+            await ctx.message.channel.send(embed=embed_msg)
+        else:
+            self.logger.info(f'O bot não encontrou as lyrics.')
+
+            embed_msg = Embed(title=f":x: **Lyrics não encontrada**", 
+            color=0xeb2828)
+            await ctx.message.channel.send(embed=embed_msg)
+
+    async def get_lyrics_by_str(self, ctx: Context, ly_text: str = None) -> None:
+        """
+        Get lyrics by the string.
+        """
+        embed_search = Embed(title=f":mag_right: **Procurando letra da música**: `{ly_text}`",
+                          color=0x550a8a)
+        msg = await ctx.send(embed=embed_search)
+
+        try:
+            if self.genius:
+                song = self.genius.search_song(transform_ly_search_str(ly_text))
+        except HTTPError as e:
+            self.logger.warning(f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}')
+        except Timeout:
+            self.logger.warning(f'Timeout')
+        
+        # Apaga a mensagem após o término da busca
+        if msg:
+            await msg.delete()
+        
+        if song and song.lyrics:
+            self.logger.info(f'O bot enviou as lyrics da string de pesquisa ao canal')
+
+            # Envia as lyrics ao canal e retira umas tags aleatórias que a api retorna
+            embed_msg = Embed(title=f":pencil: **Lyrics**", 
+            description=f"**{song.title} by {song.artist}**\n\n{transform_ly_str(song.lyrics)}",
+            color=0x550a8a)
+            await ctx.message.channel.send(embed=embed_msg)
+        else:
+            self.logger.info(f'O bot não encontrou as lyrics.')
+
+            embed_msg = Embed(title=f":x: **Lyrics não encontrada**", 
+            color=0xeb2828)
+            await ctx.message.channel.send(embed=embed_msg)
