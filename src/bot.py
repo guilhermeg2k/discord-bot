@@ -49,7 +49,7 @@ class Bot(commands.Bot):
             await self.player.list(ctx)
 
         @self.command(aliases=['r'])
-        async def remove(ctx: commands.Context, idx: str):
+        async def remove(ctx: commands.Context, *, idx: str):
             await self.player.remove(ctx, idx)
         
         @self.command(aliases=['c', 'clean'])
@@ -61,8 +61,8 @@ class Bot(commands.Bot):
             await self.player.shuffle(ctx)
 
         @self.command(aliases=['ly'])
-        async def lyrics(ctx: commands.Context):
-            await self.player.lyrics(ctx)
+        async def lyrics(ctx: commands.Context, *, ly_text: str = None):
+            await self.player.lyrics(ctx, ly_text=ly_text)
 
         @self.command()
         async def ping(ctx: commands.Context):
