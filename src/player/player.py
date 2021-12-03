@@ -23,7 +23,7 @@ class Player():
         self.genius_token = getenv('GENIUS_TOKEN')
         self.genius = None
         try:
-            self.genius = Genius(self.genius_token, skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"], remove_section_headers=True)
+            self.genius = Genius(self.genius_token, skip_non_songs=True, excluded_terms=["(Remix)", "(Live)"], remove_section_headers=True, verbose=True)
         except HTTPError as e:
             self.logger.warning(f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}')
         except Timeout:
