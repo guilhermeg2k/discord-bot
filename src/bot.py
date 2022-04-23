@@ -1,9 +1,12 @@
 import os
-from discord.ext import commands
+
 from discord import Activity, ActivityType
+from discord.ext import commands
 from dotenv import load_dotenv
+
 from src.logger import Logger
 from src.player.player import Player
+
 
 class Bot(commands.Bot):
     def __init__(self, command_prefix: str):
@@ -23,7 +26,6 @@ class Bot(commands.Bot):
         @self.command(aliases=['p'])
         async def play(ctx: commands.Context, *, play_text: str):
             self.logger.info('O bot recebeu uma solicitacao de play.')
-            await __delete_message__(ctx)
             await self.player.play(ctx, play_text)
 
         @self.command()
@@ -60,7 +62,7 @@ class Bot(commands.Bot):
         async def remove(ctx: commands.Context, *, idx: str):
             await __delete_message__(ctx)
             await self.player.remove(ctx, idx)
-        
+
         @self.command(aliases=['c', 'clean'])
         async def clear(ctx: commands.Context):
             await __delete_message__(ctx)
@@ -73,9 +75,8 @@ class Bot(commands.Bot):
 
         @self.command(aliases=['ly'])
         async def lyrics(ctx: commands.Context, *, ly_text: str = None):
-            await __delete_message__(ctx)
             await self.player.lyrics(ctx, ly_text=ly_text)
-        
+
         @self.command()
         async def ping(ctx: commands.Context):
             await ctx.send("Pong!")
