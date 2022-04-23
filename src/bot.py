@@ -74,8 +74,8 @@ class Bot(commands.Bot):
             await self.player.shuffle(ctx)
 
         @self.command(aliases=['ly'])
-        async def lyrics(ctx: commands.Context, *, ly_text: str = None):
-            await self.player.lyrics(ctx, ly_text=ly_text)
+        async def lyrics(ctx: commands.Context, *, search_text: str = None):
+            await self.player.lyrics(ctx, search_text=search_text)
 
         @self.command()
         async def ping(ctx: commands.Context):
