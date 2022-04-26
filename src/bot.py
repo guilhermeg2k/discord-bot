@@ -25,10 +25,11 @@ class Bot(commands.Bot):
 
         @self.command(aliases=['p'])
         async def play(ctx: commands.Context, *, play_text: str):
-            self.logger.info('O bot recebeu uma solicitacao de play.')
+            await __delete_message__(ctx)
+            self.logger.info('O bot recebeu uma solicitação de play.')
             await self.player.play(ctx, play_text)
 
-        @self.command()
+        @self.command(aliases=['ps'])
         async def pause(ctx: commands.Context):
             await __delete_message__(ctx)
             await self.player.pause(ctx)
@@ -52,7 +53,7 @@ class Bot(commands.Bot):
             await self.player.leave(ctx)
             self.logger.info('O bot saiu do canal de voz.')
 
-        @self.command(aliases=['q', 'queue'])
+        @self.command(aliases=['ls', 'q', 'queue', ])
         async def list(ctx: commands.Context):
             await __delete_message__(ctx)
             await self.player.list(ctx)
@@ -68,17 +69,19 @@ class Bot(commands.Bot):
             await __delete_message__(ctx)
             await self.player.clear(ctx)
 
-        @self.command()
+        @self.command(aliases=['sf'])
         async def shuffle(ctx: commands.Context):
             await __delete_message__(ctx)
             await self.player.shuffle(ctx)
 
         @self.command(aliases=['ly'])
         async def lyrics(ctx: commands.Context, *, search_text: str = None):
+            await __delete_message__(ctx)
             await self.player.lyrics(ctx, search_text=search_text)
 
         @self.command()
         async def ping(ctx: commands.Context):
+            await __delete_message__(ctx)
             await ctx.send("Pong!")
 
         async def __delete_message__(ctx: commands.Context):
