@@ -73,7 +73,7 @@ class Player():
         user_voice_channel = ctx.author.voice.channel
         if ctx.voice_client and ctx.voice_client.channel == user_voice_channel:
             queue = self.get_queue(ctx)
-            await self.send_commands_list(ctx)
+            await self.bot.send_commands_list(ctx)
             await ctx.voice_client.disconnect()
             with queue.mutex:
                 queue.queue.clear()
@@ -115,7 +115,7 @@ class Player():
                 self.playing = True
                 self.current_song[ctx.guild.id] = queue.get()
 
-                await self.clear_channel(ctx)
+                await self.bot.clear_bot_msgs_in_channel(self.bot.user, ctx)
 
                 current_playing_song_embed_msg = Embed(title=f":arrow_forward: **Reproduzindo**",
                                                        description=f"`{self.current_song[ctx.guild.id].title}`", color=0x550a8a)
@@ -144,7 +144,7 @@ class Player():
 
             await sleep(1)
             idle_timer += 1
-        await self.send_commands_list(ctx)
+        await self.bot.send_commands_list(ctx)
         await voice_client.disconnect()
         self.logger.info('O bot desconectou do canal após reproduzir a fila.')
         return
@@ -275,21 +275,6 @@ class Player():
                                      color=0xeb2828)
         await ctx.message.channel.send(embed=lyrics_embed_msg)
 
-    async def send_commands_list(self, ctx: Context):
-        commands_list_msg_description = "**-play** [-p] <nome da música> - Coloca uma música solicitada na fila\n\
-            **-pause** [-ps] -  Pausa a música atual\n\
-            **-resume** [-rs] - Voltar a tocar a música pausada\n\
-            **-next** [-n] [-s] [-skip] - Pula para a proxima música na fila\n\
-            **-list** [-ls] [-queue] [-q] - Exibi a fila de músicas a serem tocadas\n\
-            **-shuffle** [-sf] - Embaralha a fila de músicas a serem tocadas\n\
-            **-remove** [-r] <posição da música na fila>  - Remove uma música da fila\n\
-            **-lyrics** [-ly] - Exibi a letra da música que está reproduzindo\n\
-            **-lyrics** [-ly] <nome da música> - Exibi a letra da música solicitada\n\
-            **-leave** [-l] - Me manda embora 😔\n"
-        commands_list_msg_embed = Embed(title="🎶 **Lista de comandos**",
-                                        description=commands_list_msg_description, color=0x550a8a)
-        await ctx.send(embed=commands_list_msg_embed)
-
     async def add_playlist(self, play_list_url: str, ctx: Context) -> None:
         """
         Downloads all songs from a playlist and put them on que queue
@@ -352,11 +337,6 @@ class Player():
             self.playing = True
             self.bot.loop.create_task(self.play_queue(ctx))
 
-    async def clear_channel(self, ctx):
-        channel_msgs = await ctx.channel.history(limit=100).flatten()
-        bot_channel_msgs = filter(lambda msg: msg.author == self.bot.user, channel_msgs)
-        await ctx.channel.delete_messages(bot_channel_msgs)
-
     def get_queue(self, ctx: Context) -> Queue:
         """
         Checks if queue exists
@@ -366,4 +346,3 @@ class Player():
         if not ctx.guild.id in self.song_queue:
             self.song_queue[ctx.guild.id] = Queue()
         return self.song_queue[ctx.guild.id]
-
