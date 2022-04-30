@@ -15,4 +15,4 @@ def scape_song_title(song_title) -> str:
     ft_pattern = r'ft\..*'
     song_title = re.sub(parentheses_pattern, '', song_title)
     song_title = re.sub(ft_pattern, '', song_title)
-    return song_title
+    return song_title.strip()

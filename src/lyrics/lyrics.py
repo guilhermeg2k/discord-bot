@@ -101,15 +101,17 @@ class Lyrics():
 
         if msg:
             await msg.delete()
-        if song and song.lyrics:
+
+        paginated_lyrics = split_str_by_len(song.lyrics.strip(), 4000)
+        pages = len(paginated_lyrics)
+    
+        if song and song.lyrics and pages <= 10:
             self.logger.info(
                 f'O bot enviou a lyrics ao canal')
-            paginated_lyrics = split_str_by_len(song.lyrics.strip(), 4000)
             lyrics_embed_msg = Embed(title=f":pencil: **Lyrics**",
                                      description=f"**{song.title} by {song.artist}**\n\n{(paginated_lyrics[0])}",
                                      color=0x550a8a)
             await ctx.message.channel.send(embed=lyrics_embed_msg)
-            pages = len(paginated_lyrics)
             if pages > 1:
                 page = 1
                 while page < pages:
