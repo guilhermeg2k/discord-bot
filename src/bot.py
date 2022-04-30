@@ -9,6 +9,7 @@ from src.logger import Logger
 from src.lyrics.lyrics import Lyrics
 from src.player.player import Player
 
+
 class Bot(commands.Bot):
     def __init__(self, command_prefix: str):
         super().__init__(command_prefix=command_prefix)
@@ -18,8 +19,8 @@ class Bot(commands.Bot):
         self.token = os.getenv('TOKEN')
         self.player = Player(bot=self)
         self.lyrics = Lyrics(bot=self)
-        self.__version__ = 0.4
-    
+        self.__version__ = '0.4.1'
+
         @self.event
         async def on_ready():
             self.logger.info('Bot conectado com o Discord.')
