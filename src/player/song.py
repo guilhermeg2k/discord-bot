@@ -1,5 +1,4 @@
 from datetime import date
-from json import dumps
 
 
 class Song():
@@ -18,6 +17,8 @@ class Song():
         output['added_date'] = self.added_date
         output['last_played'] = self.last_played
         output['times_played'] = self.times_played
+        output['track'] = self.track
+        output['artist'] = self.artist
         return output
 
     def from_dict(self, info: dict) -> None:
@@ -48,9 +49,12 @@ class Song():
         else:
             self.times_played = 0
 
-        self.url = info['url']
-        self.path = info['path']
-        self.title = info['title']
-        self.duration = info['duration']
+        self.url = info.get('url')
+        self.path = info.get('path')
+        self.title = info.get('title')
+        self.duration = info.get('duration')
         self.thumb = thumbnail
+        self.track = info.get('track')
+        self.artist = info.get('artist')
+
         self.lyrics = None
