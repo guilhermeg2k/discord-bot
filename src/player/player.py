@@ -251,7 +251,8 @@ class Player():
         else:
             song_url = song_name
 
-        id = str(match(r'.*watch\?v=(.*)', song_url).group(1))
+        result_id = search(r'youtube.com\/watch\?v=(.*)|youtu.be\/(.*)', song_url)
+        id = str(result_id.group(1) or result_id.group(2))
         self.logger.info(f'ID:{id} \tURL:{song_url}')
         song = self.cache.get_song(id)
         if not song:
