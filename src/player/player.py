@@ -23,7 +23,6 @@ class Player:
         self.logger = bot.logger
         self.cache = SongCache(self.logger)
         self.IDLE_TIMEOUT = getenv("IDLE_TIMEOUT", 1)
-        self.DELETE_TIME = getenv("DELETE_TIME", 30)
         self.playing = False
         self.player_msg = None
 
@@ -68,22 +67,24 @@ class Player:
             embed_msg.set_footer(
                 text=f"Duração da fila: {str(timedelta(seconds=queue_duration))}"
             )
-            self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
+            self.bot.loop.create_task(
+                ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
+            )
             self.logger.info("O bot recuperou a fila de reprodução.")
         else:
             embed_msg = Embed(
                 title="Fila vazia", description="Adicione músicas :)", color=0xEB2828
             )
-            self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
+            self.bot.loop.create_task(
+                ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
+            )
             self.logger.info("O bot não recuperou a lista pois a fila está vazia.")
 
     async def leave(self, ctx: Context) -> None:
         user_voice_channel = ctx.author.voice.channel
         if ctx.voice_client and ctx.voice_client.channel == user_voice_channel:
             queue = self.get_queue(ctx)
-            #await self.bot.leave(ctx)
-            with queue.mutex:
-                queue.queue.clear()
+            await self.clear(ctx)
             await self.next(ctx)
             self.playing = False
             self.logger.info(f"O bot desconectou do canal.")
@@ -91,7 +92,7 @@ class Player:
             self.bot.loop.create_task(
                 ctx.respond(
                     "O usuário deve estar no mesmo canal do bot para desconectá-lo",
-                    delete_after=self.DELETE_TIME
+                    delete_after=self.bot.delete_time,
                 )
             )
 
@@ -198,12 +199,12 @@ class Player:
 
             await sleep(1)
             idle_timer += 1
-        await self.bot.leave(ctx)
+        await self.leave(ctx)
         await self.player_msg.delete()
         self.logger.info("O bot desconectou do canal após reproduzir a fila.")
         return
 
-    async def remove(self, ctx: Context, idx: str) -> None:
+    async def remove(self, ctx: Context, idx: int) -> None:
         """
         Remove song from the queue by index.
         """
@@ -216,19 +217,24 @@ class Player:
                         description="Adicione músicas :)",
                         color=0xEB2828,
                     )
-                    self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
-                    return
-                if idx.isnumeric() and (abs(int(idx)) <= queue.qsize()):
-                    del queue.queue[int(idx) - 1]
+                    self.bot.loop.create_task(
+                        ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
+                    )
+                if idx <= queue.qsize():
+                    del queue.queue[idx - 1]
                     self.logger.info(
-                        f"O bot removeu a música de posição {int(idx)-1} da fila."
+                        f"O bot removeu a música de posição {idx-1} da fila."
+                    )
+                    self.bot.loop.create_task(
+                        ctx.respond("Música removida.", delete_after=self.bot.delete_time)
                     )
                 else:
                     embed_msg = Embed(title=f":x: **Posição inválida**", color=0xEB2828)
-                    self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
-                    return
+                    self.bot.loop.create_task(
+                        ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
+                    )
 
-    async def clear(self, ctx: Context) -> None:
+    async def clear(self, ctx: Context) -> bool:
         """
         Clear queue.
         """
@@ -237,17 +243,12 @@ class Player:
                 queue = self.get_queue(ctx)
 
                 if queue.empty():
-                    embed_msg = Embed(
-                        title="Fila vazia",
-                        description="Adicione músicas :)",
-                        color=0xEB2828,
-                    )
-                    self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
-                    return
+                    return False
                 else:
                     with queue.mutex:
                         queue.queue.clear()
                     self.logger.info(f"O bot limpou a fila.")
+                    return True
 
     async def shuffle(self, ctx: Context) -> None:
         """
@@ -263,7 +264,7 @@ class Player:
                     description="Adicione músicas :)",
                     color=0xEB2828,
                 )
-                self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
+                self.bot.loop.create_task(ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time))
                 return
             else:
                 with queue.mutex:
@@ -272,7 +273,7 @@ class Player:
                     title=":twisted_rightwards_arrows: **Fila embaralhada**",
                     color=0x550A8A,
                 )
-                self.bot.loop.create_task(ctx.message.channel.send(embed=embed_msg))
+                self.bot.loop.create_task(ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time))
                 self.logger.info(f"O bot embaralhou a fila.")
 
     async def handle_song_request(self, play_text: str, ctx: Context) -> None:
@@ -305,7 +306,7 @@ class Player:
         )
 
         self.bot.loop.create_task(
-            ctx.edit(embed=embed_msg, delete_after=self.DELETE_TIME)
+            ctx.edit(embed=embed_msg, delete_after=self.bot.delete_time)
         )
         for song_url in songs_url:
             await self.add_song(song_url, ctx, link=True, playlist=True)
@@ -336,7 +337,7 @@ class Player:
                 music_not_found_msg = Embed(
                     title=f":x: **Música não encontrada**", color=0xEB2828
                 )
-                await ctx.edit(embed=music_not_found_msg, delete_after=self.DELETE_TIME)
+                await ctx.edit(embed=music_not_found_msg, delete_after=self.bot.delete_time)
                 return
             self.cache.add_song(song)
 
@@ -355,7 +356,7 @@ class Player:
                 )
                 embed_msg.set_footer(text=f"Posição: {len(queue.queue)}")
                 self.bot.loop.create_task(
-                    ctx.edit(embed=embed_msg, delete_after=self.DELETE_TIME)
+                    ctx.edit(embed=embed_msg, delete_after=self.bot.delete_time)
                 )
             self.logger.info("O bot adicionou a música na fila de reprodução.")
         else:
