@@ -28,12 +28,11 @@ class Bot(Bot):
             self.loop.create_task(
                 self.change_presence(
                     activity=Activity(
-                        type=ActivityType.listening, name="no -play, tchama ♫"
+                        type=ActivityType.listening, name="no /play, tchama ♫"
                     )
                 )
             )
 
-        # FIX:
         @self.command(
             description="Reproduzir música.",
             options=[
@@ -49,28 +48,32 @@ class Bot(Bot):
             self.logger.info("O bot recebeu uma solicitação de play.")
             await self.player.play(ctx, play_text)
 
-        # @self.command(aliases=['ps'])
+        # DONE
+        # @self.command(description="Pausar reprodutor.")
         # async def pause(ctx: commands.Context):
-        #     await self.delete_current_message(ctx)
         #     await self.player.pause(ctx)
+        #     await ctx.respond('A música foi pausada.', delete_after=3)
         #     self.logger.info('O bot pausou a música.')
 
-        # @self.command(aliases=['n', 's', 'skip'])
+        # DONE
+        # @self.command(description="Pula para a próxima música.")
         # async def next(ctx: commands.Context):
-        #     await self.delete_current_message(ctx)
         #     await self.player.next(ctx)
+        #     await ctx.respond('A música foi pulada.', delete_after=3)
         #     self.logger.info('O bot pulou a música.')
 
-        # @self.command(aliases=['rs'])
+        # DONE
+        # @self.command(description="Continuar reprodutor.")
         # async def resume(ctx: commands.Context):
-        #     await self.delete_current_message(ctx)
         #     await self.player.resume(ctx)
+        #     await ctx.respond('A música foi resumida.', delete_after=3)
         #     self.logger.info('O bot voltou a reproduzir a música.')
 
-        # @self.command(aliases=['l'])
+        # DONE
+        # @self.command(description="Força a saída do bot do canal onde está.")
         # async def leave(ctx: commands.Context):
-        #     await self.delete_current_message(ctx)
         #     await self.player.leave(ctx)
+        #     await ctx.respond('Faleu valou!', delete_after=3)
         #     self.logger.info('O bot saiu do canal de voz.')
 
         # @self.command(aliases=['ls', 'q', 'queue', ])
@@ -99,7 +102,7 @@ class Bot(Bot):
         #     await self.delete_current_message(ctx)
         #     await self.lyrics.search_and_send(ctx, search_text)
 
-        # TODO FEITO
+        # DONE
         # @self.command(description="Latência do bot.")
         # async def ping(ctx: commands.Context):
         #     lat = int(self.latency * 1000)
