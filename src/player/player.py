@@ -206,7 +206,6 @@ class Player:
             await self.player_msg.delete()
             self.player_msg = None
             self.logger.info("O bot desconectou do canal após reproduzir a fila.")
-            j = int('a')
         except Exception:
             error = str(traceback.format_exc())
             self.logger.error(error)
