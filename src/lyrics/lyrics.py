@@ -79,7 +79,7 @@ class Lyrics():
         else:
             song_title = current_song.title
         song_title = scape_song_title(song_title)
-        print ('st', song_title)
+        self.logger.info(f'Song Title: {song_title}')
         await self.send_song_lyrics(ctx, song_title , current_song.artist)
 
     async def send_song_lyrics(self, ctx: Context, song_title: str, song_artist: str = None) -> None:
@@ -90,17 +90,17 @@ class Lyrics():
             embed_msg_title = f":mag_right: **Procurando letra da música**: `{song_title}` by `{song_artist}`"
             searching_embed_msg = Embed(title=embed_msg_title,
                                         color=0x550a8a)
-            msg = await ctx.send(embed=searching_embed_msg)
+            await ctx.respond(embed=searching_embed_msg)
             song = await self.get_song_with_lyrics(song_title, song_artist)
         else:
             embed_msg_title = f":mag_right: **Procurando letra da música**: `{song_title}`"
             searching_embed_msg = Embed(title=embed_msg_title,
                                         color=0x550a8a)
-            msg = await ctx.send(embed=searching_embed_msg)
+            await ctx.respond(embed=searching_embed_msg)
             song = await self.get_song_with_lyrics(song_title)
 
-        if msg:
-            await msg.delete()
+        # if msg:
+        #     await msg.delete()
 
         paginated_lyrics = split_str_by_len(song.lyrics.strip(), 4000)
         pages = len(paginated_lyrics)
@@ -111,16 +111,16 @@ class Lyrics():
             lyrics_embed_msg = Embed(title=f":pencil: **Lyrics**",
                                      description=f"**{song.title} by {song.artist}**\n\n{(paginated_lyrics[0])}",
                                      color=0x550a8a)
-            await ctx.message.channel.send(embed=lyrics_embed_msg)
+            await ctx.edit(embed=lyrics_embed_msg, delete_after=self.bot.delete_time * 5)
             if pages > 1:
                 page = 1
                 while page < pages:
                     lyrics_embed_msg = Embed(description=paginated_lyrics[page],
                                              color=0x550a8a)
-                    await ctx.message.channel.send(embed=lyrics_embed_msg)
+                    await ctx.send_followup(embed=lyrics_embed_msg, delete_after=self.bot.delete_time * 5)
                     page += 1
         else:
             self.logger.info(f'O bot não encontrou a lyrics.')
             lyrics_embed_msg = Embed(title=f":x: **Lyrics não encontrada**",
                                      color=0xeb2828)
-            await ctx.message.channel.send(embed=lyrics_embed_msg)
+            await ctx.edit(embed=lyrics_embed_msg, delete_after=self.bot.delete_time)
