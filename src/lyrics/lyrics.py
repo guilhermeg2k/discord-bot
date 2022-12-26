@@ -18,14 +18,14 @@ class Lyrics():
 
         try:
             self.__genius = Genius(self.__genius_token, skip_non_songs=True, excluded_terms=[
-                "(Remix)", "(Live)"], remove_section_headers=True, verbose=True)
+                "(Remix)", "(Live)", "(Official Audio)", "(official audio)", "official audio", "Official Audio"], remove_section_headers=True, verbose=True)
         except HTTPError as e:
             self.logger.warning(
                 f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}')
         except Timeout:
             self.logger.warning(f'Timeout')
         self.__genius = Genius(self.__genius_token, skip_non_songs=True, excluded_terms=[
-            "(Remix)", "(Live)"], remove_section_headers=True, verbose=True)
+            "(Remix)", "(Live)", "(Official Audio)", "(official audio)", "official audio", "Official Audio"], remove_section_headers=True, verbose=True)
 
     async def search_and_send(self, ctx: Context, search_text: str = None) -> None:
         """
@@ -104,7 +104,7 @@ class Lyrics():
 
         paginated_lyrics = split_str_by_len(song.lyrics.strip(), 4000)
         pages = len(paginated_lyrics)
-    
+
         if song and song.lyrics and pages <= 10:
             self.logger.info(
                 f'O bot enviou a lyrics ao canal')
