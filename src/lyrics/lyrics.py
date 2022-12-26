@@ -23,6 +23,15 @@ class Lyrics():
                                    excluded_terms=["(Remix)", "(Live)"],
                                    remove_section_headers=True,
                                    verbose=True)
+            self.__genius = Genius(self.__genius_token,
+                                   skip_non_songs=True,
+                                   excluded_terms=[
+                                       "(Remix)", "(Live)", "(Official Audio)",
+                                       "(official audio)", "official audio",
+                                       "Official Audio"
+                                   ],
+                                   remove_section_headers=True,
+                                   verbose=True)
         except HTTPError as e:
             self.logger.warning(
                 f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}'
