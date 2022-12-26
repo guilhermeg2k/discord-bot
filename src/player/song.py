@@ -2,6 +2,7 @@ from datetime import date
 
 
 class Song():
+
     def __init__(self, id: str, info: dict) -> None:
         self.id = id
         self.from_dict(info)
@@ -25,7 +26,8 @@ class Song():
         if 'thumb' in info:
             thumbnail = info['thumb']
         else:
-            for thumb in info['thumbnails']:  # TODO ORDER BY PREFERENCE, POP FIRST
+            for thumb in info[
+                    'thumbnails']:  # TODO ORDER BY PREFERENCE, POP FIRST
                 if thumb['preference'] == 0:
                     thumbnail = thumb['url']
 
