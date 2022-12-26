@@ -17,21 +17,21 @@ from src.player.youtube import (
 
 
 class Player:
+
     def __init__(self, bot) -> None:
         self.song_queue = {}
         self.current_song = {}
         self.bot = bot
         self.logger = bot.logger
         self.cache = SongCache(self.logger)
-        self.IDLE_TIMEOUT = getenv("IDLE_TIMEOUT", 1)
+        self.IDLE_TIMEOUT = int(getenv("IDLE_TIMEOUT", 1))
         self.playing = False
         self.player_msg = None
 
     async def play(self, ctx: Context, play_text: str) -> None:
         if ctx.author.voice is None:
-            await ctx.respond(
-                "Você não está em um canal de voz", delete_after=self.bot.delete_time
-            )
+            await ctx.respond("Você não está em um canal de voz",
+                              delete_after=self.bot.delete_time)
             return
 
         user_voice_channel = ctx.author.voice.channel
@@ -41,9 +41,8 @@ class Player:
                 await ctx.respond("O bot já está conectado em outro canal!")
                 return
 
-        embed_msg = Embed(
-            title=f":mag_right: **Procurando**: `{play_text}`", color=0x550A8A
-        )
+        embed_msg = Embed(title=f":mag_right: **Procurando**: `{play_text}`",
+                          color=0x550A8A)
         await ctx.respond(embed=embed_msg)
 
         self.logger.info("Buscando a musica.")
@@ -55,33 +54,29 @@ class Player:
             list_buffer = ""
             queue_duration = 0
             for idx, song in enumerate(list(queue.queue), 1):
-                list_buffer += (
-                    f"**{idx}.** *"
-                    + song.title
-                    + "* "
-                    + f"`{timedelta(seconds=song.duration)}`"
-                    + f" {song.requester.mention}"
-                    + "\n"
-                )
+                list_buffer += (f"**{idx}.** *" + song.title + "* " +
+                                f"`{timedelta(seconds=song.duration)}`" +
+                                f" {song.requester.mention}" + "\n")
                 queue_duration += song.duration
-            embed_msg = Embed(
-                title=":play_pause: **Fila**", description=list_buffer, color=0x550A8A
-            )
+            embed_msg = Embed(title=":play_pause: **Fila**",
+                              description=list_buffer,
+                              color=0x550A8A)
             embed_msg.set_footer(
-                text=f"Duração da fila: {str(timedelta(seconds=queue_duration))}"
-            )
+                text=
+                f"Duração da fila: {str(timedelta(seconds=queue_duration))}")
             self.bot.loop.create_task(
-                ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
-            )
+                ctx.respond(embed=embed_msg,
+                            delete_after=self.bot.delete_time))
             self.logger.info("O bot recuperou a fila de reprodução.")
         else:
-            embed_msg = Embed(
-                title="Fila vazia", description="Adicione músicas :)", color=0xEB2828
-            )
+            embed_msg = Embed(title="Fila vazia",
+                              description="Adicione músicas :)",
+                              color=0xEB2828)
             self.bot.loop.create_task(
-                ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
-            )
-            self.logger.info("O bot não recuperou a lista pois a fila está vazia.")
+                ctx.respond(embed=embed_msg,
+                            delete_after=self.bot.delete_time))
+            self.logger.info(
+                "O bot não recuperou a lista pois a fila está vazia.")
 
     async def leave(self, ctx: Context) -> None:
         user_voice_channel = ctx.author.voice.channel
@@ -94,8 +89,7 @@ class Player:
                 ctx.respond(
                     "O usuário deve estar no mesmo canal do bot para desconectá-lo",
                     delete_after=self.bot.delete_time,
-                )
-            )
+                ))
 
     async def pause(self, ctx: Context) -> None:
         if ctx.author.voice is not None:
@@ -105,17 +99,19 @@ class Player:
                 if self.player_msg:
                     embed_msg = Embed(
                         title=f":pause_button: **Pausado**",
-                        description=f"`{self.current_song[ctx.guild.id].title}`",
+                        description=
+                        f"`{self.current_song[ctx.guild.id].title}`",
                         color=0x550A8A,
                     )
-                    embed_msg.set_thumbnail(url=self.current_song[ctx.guild.id].thumb)
+                    embed_msg.set_thumbnail(
+                        url=self.current_song[ctx.guild.id].thumb)
 
                     if self.current_song[ctx.guild.id].requester:
                         embed_msg.set_footer(
-                            text=f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}",
+                            text=
+                            f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}",
                             icon_url=self.current_song[
-                                ctx.guild.id
-                            ].requester.avatar.url,
+                                ctx.guild.id].requester.avatar.url,
                         )
 
                     await self.player_msg.edit(embed=embed_msg)
@@ -128,17 +124,19 @@ class Player:
                 if self.player_msg:
                     embed_msg = Embed(
                         title=f":arrow_forward: **Reproduzindo**",
-                        description=f"`{self.current_song[ctx.guild.id].title}`",
+                        description=
+                        f"`{self.current_song[ctx.guild.id].title}`",
                         color=0x550A8A,
                     )
-                    embed_msg.set_thumbnail(url=self.current_song[ctx.guild.id].thumb)
+                    embed_msg.set_thumbnail(
+                        url=self.current_song[ctx.guild.id].thumb)
 
                     if self.current_song[ctx.guild.id].requester:
                         embed_msg.set_footer(
-                            text=f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}",
+                            text=
+                            f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}",
                             icon_url=self.current_song[
-                                ctx.guild.id
-                            ].requester.avatar.url,
+                                ctx.guild.id].requester.avatar.url,
                         )
 
                     await self.player_msg.edit(embed=embed_msg)
@@ -168,31 +166,33 @@ class Player:
 
                     current_playing_song_embed_msg = Embed(
                         title=f":arrow_forward: **Reproduzindo**",
-                        description=f"`{self.current_song[ctx.guild.id].title}`",
+                        description=
+                        f"`{self.current_song[ctx.guild.id].title}`",
                         color=0x550A8A,
                     )
                     current_playing_song_embed_msg.set_thumbnail(
-                        url=self.current_song[ctx.guild.id].thumb
-                    )
+                        url=self.current_song[ctx.guild.id].thumb)
 
                     if self.current_song[ctx.guild.id].requester:
                         current_playing_song_embed_msg.set_footer(
-                            text=f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}",
-                            icon_url=self.current_song[ctx.guild.id].requester.avatar.url,
+                            text=
+                            f"Adicionada por {self.current_song[ctx.guild.id].requester.display_name}",
+                            icon_url=self.current_song[
+                                ctx.guild.id].requester.avatar.url,
                         )
 
                     if self.player_msg:
                         self.player_msg = await self.player_msg.edit(
-                            embed=current_playing_song_embed_msg
-                        )
+                            embed=current_playing_song_embed_msg)
                     else:
                         self.player_msg = await ctx.channel.send(
-                            embed=current_playing_song_embed_msg
-                        )
+                            embed=current_playing_song_embed_msg)
 
-                    voice_client.play(FFmpegPCMAudio(self.current_song[ctx.guild.id].path))
+                    voice_client.play(
+                        FFmpegPCMAudio(self.current_song[ctx.guild.id].path))
 
-                    while voice_client.is_playing() or voice_client.is_paused():
+                    while voice_client.is_playing() or voice_client.is_paused(
+                    ):
                         await sleep(1)
 
                     self.playing = False
@@ -205,7 +205,8 @@ class Player:
             await ctx.voice_client.disconnect()
             await self.player_msg.delete()
             self.player_msg = None
-            self.logger.info("O bot desconectou do canal após reproduzir a fila.")
+            self.logger.info(
+                "O bot desconectou do canal após reproduzir a fila.")
         except Exception:
             error = str(traceback.format_exc())
             self.logger.error(error)
@@ -226,23 +227,21 @@ class Player:
                         color=0xEB2828,
                     )
                     self.bot.loop.create_task(
-                        ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
-                    )
+                        ctx.respond(embed=embed_msg,
+                                    delete_after=self.bot.delete_time))
                 if idx <= queue.qsize():
                     del queue.queue[idx - 1]
                     self.logger.info(
-                        f"O bot removeu a música de posição {idx-1} da fila."
-                    )
+                        f"O bot removeu a música de posição {idx-1} da fila.")
                     self.bot.loop.create_task(
-                        ctx.respond(
-                            "Música removida.", delete_after=self.bot.delete_time
-                        )
-                    )
+                        ctx.respond("Música removida.",
+                                    delete_after=self.bot.delete_time))
                 else:
-                    embed_msg = Embed(title=f":x: **Posição inválida**", color=0xEB2828)
+                    embed_msg = Embed(title=f":x: **Posição inválida**",
+                                      color=0xEB2828)
                     self.bot.loop.create_task(
-                        ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
-                    )
+                        ctx.respond(embed=embed_msg,
+                                    delete_after=self.bot.delete_time))
 
     async def clear(self, ctx: Context) -> bool:
         """
@@ -275,8 +274,8 @@ class Player:
                     color=0xEB2828,
                 )
                 self.bot.loop.create_task(
-                    ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
-                )
+                    ctx.respond(embed=embed_msg,
+                                delete_after=self.bot.delete_time))
                 return
             else:
                 with queue.mutex:
@@ -286,15 +285,15 @@ class Player:
                     color=0x550A8A,
                 )
                 self.bot.loop.create_task(
-                    ctx.respond(embed=embed_msg, delete_after=self.bot.delete_time)
-                )
+                    ctx.respond(embed=embed_msg,
+                                delete_after=self.bot.delete_time))
                 self.logger.info(f"O bot embaralhou a fila.")
 
     async def handle_song_request(self, play_text: str, ctx: Context) -> None:
-        is_youtube_playlist = match("https://www.youtube.com/playlist*", play_text)
+        is_youtube_playlist = match("https://www.youtube.com/playlist*",
+                                    play_text)
         is_youtube_link = match(
-            "https://www.youtube.com/watch*|https://youtu.be/*", play_text
-        )
+            "https://www.youtube.com/watch*|https://youtu.be/*", play_text)
         if is_youtube_playlist:
             await self.add_playlist(play_text, ctx)
         elif is_youtube_link:
@@ -320,15 +319,16 @@ class Player:
         )
 
         self.bot.loop.create_task(
-            ctx.edit(embed=embed_msg, delete_after=self.bot.delete_time)
-        )
+            ctx.edit(embed=embed_msg, delete_after=self.bot.delete_time))
         for song_url in songs_url:
             await self.add_song(song_url, ctx, link=True, playlist=True)
         self.logger.info("O bot adicionou as músicas da playlist.")
 
-    async def add_song(
-        self, song_name: str, ctx: Context, link=False, playlist=False
-    ) -> None:
+    async def add_song(self,
+                       song_name: str,
+                       ctx: Context,
+                       link=False,
+                       playlist=False) -> None:
         """
         A parallel function to search, download the song and put on the queue
         Starts the player if it's not running
@@ -338,7 +338,8 @@ class Player:
         else:
             song_url = song_name
 
-        result_id = search(r"youtube.com\/watch\?v=(.*)|youtu.be\/(.*)", song_url)
+        result_id = search(r"youtube.com\/watch\?v=(.*)|youtu.be\/(.*)",
+                           song_url)
         id = str(result_id.group(1) or result_id.group(2))
 
         self.logger.info(f"ID:{id} \tURL:{song_url}")
@@ -349,11 +350,9 @@ class Player:
             if not song:
                 self.logger.info("Música não encontrada")
                 music_not_found_msg = Embed(
-                    title=f":x: **Música não encontrada**", color=0xEB2828
-                )
-                await ctx.edit(
-                    embed=music_not_found_msg, delete_after=self.bot.delete_time
-                )
+                    title=f":x: **Música não encontrada**", color=0xEB2828)
+                await ctx.edit(embed=music_not_found_msg,
+                               delete_after=self.bot.delete_time)
                 return
             self.cache.add_song(song)
 
@@ -372,8 +371,8 @@ class Player:
                 )
                 embed_msg.set_footer(text=f"Posição: {len(queue.queue)}")
                 self.bot.loop.create_task(
-                    ctx.edit(embed=embed_msg, delete_after=self.bot.delete_time)
-                )
+                    ctx.edit(embed=embed_msg,
+                             delete_after=self.bot.delete_time))
             self.logger.info("O bot adicionou a música na fila de reprodução.")
         else:
             self.playing = True

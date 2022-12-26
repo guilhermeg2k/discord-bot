@@ -11,6 +11,7 @@ from src.player.player import Player
 
 
 class Bot(Bot):
+
     def __init__(self):
         super().__init__()
         load_dotenv()
@@ -26,12 +27,8 @@ class Bot(Bot):
         async def on_ready():
             self.logger.info("Bot conectado com o Discord.")
             self.loop.create_task(
-                self.change_presence(
-                    activity=Activity(
-                        type=ActivityType.listening, name="no /play, tchama ♫"
-                    )
-                )
-            )
+                self.change_presence(activity=Activity(
+                    type=ActivityType.listening, name="no /play, tchama ♫")))
 
         @self.command(
             description="Reproduzir música.",
@@ -63,9 +60,8 @@ class Bot(Bot):
         async def pause(ctx: commands.Context):
             try:
                 await self.player.pause(ctx)
-                await ctx.respond(
-                    "A música foi pausada.", delete_after=self.delete_time
-                )
+                await ctx.respond("A música foi pausada.",
+                                  delete_after=self.delete_time)
                 self.logger.info("O bot pausou a música.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -82,7 +78,8 @@ class Bot(Bot):
         async def next(ctx: commands.Context):
             try:
                 await self.player.next(ctx)
-                await ctx.respond("A música foi pulada.", delete_after=self.delete_time)
+                await ctx.respond("A música foi pulada.",
+                                  delete_after=self.delete_time)
                 self.logger.info("O bot pulou a música.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -99,9 +96,8 @@ class Bot(Bot):
         async def resume(ctx: commands.Context):
             try:
                 await self.player.resume(ctx)
-                await ctx.respond(
-                    "A música foi resumida.", delete_after=self.delete_time
-                )
+                await ctx.respond("A música foi resumida.",
+                                  delete_after=self.delete_time)
                 self.logger.info("O bot voltou a reproduzir a música.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -118,7 +114,8 @@ class Bot(Bot):
         async def leave(ctx: commands.Context):
             try:
                 await self.player.leave(ctx)
-                await ctx.respond("Faleu valou!", delete_after=self.delete_time)
+                await ctx.respond("Faleu valou!",
+                                  delete_after=self.delete_time)
                 self.logger.info("O bot saiu do canal de voz.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -177,14 +174,16 @@ class Bot(Bot):
             try:
                 rs = await self.player.clear(ctx)
                 if rs:
-                    await ctx.respond("Fila esvaziada!", delete_after=self.delete_time)
+                    await ctx.respond("Fila esvaziada!",
+                                      delete_after=self.delete_time)
                 else:
                     embed_msg = Embed(
                         title="Fila vazia",
                         description="Adicione músicas :)",
                         color=0xEB2828,
                     )
-                    await ctx.respond(embed=embed_msg, delete_after=self.delete_time)
+                    await ctx.respond(embed=embed_msg,
+                                      delete_after=self.delete_time)
             except Exception as err:
                 error = str(traceback.format_exc())
                 self.logger.error(error)
@@ -212,7 +211,8 @@ class Bot(Bot):
                 await ctx.respond(embed=embed_msg, delete_after=5)
 
         @self.command(
-            description="Busca a letra da música. Como padrão utiliza a música que está sendo reproduzida caso haja.",
+            description=
+            "Busca a letra da música. Como padrão utiliza a música que está sendo reproduzida caso haja.",
             options=[
                 Option(
                     str,
@@ -241,7 +241,8 @@ class Bot(Bot):
             try:
                 lat = int(self.latency * 1000)
                 self.logger.info(f"Latencia: {lat}ms")
-                await ctx.respond(f"Pong! ({lat}ms)", delete_after=self.delete_time)
+                await ctx.respond(f"Pong! ({lat}ms)",
+                                  delete_after=self.delete_time)
             except Exception as err:
                 error = str(traceback.format_exc())
                 self.logger.error(error)
@@ -269,6 +270,7 @@ class Bot(Bot):
                 **/lyrics** <nome da música> - Exibi a letra da música solicitada\n\
                 **/leave** - Me manda embora 😔\n\
                 \n"
+
         commands_list_embed_msg = Embed(
             title=command_list_msg_title,
             description=commands_list_msg_description,
@@ -277,7 +279,9 @@ class Bot(Bot):
         commands_list_embed_msg.set_footer(text=f"Versão {self.__version__}")
         await ctx.send(embed=commands_list_embed_msg)
 
-    async def send_exception(self, exception: str, command: str = None) -> None:
+    async def send_exception(self,
+                             exception: str,
+                             command: str = None) -> None:
         debug_guild = int(os.getenv("DEBUG_GUILD"))
         debug_channel = int(os.getenv("DEBUG_CHANNEL"))
         if not (debug_guild and debug_channel):

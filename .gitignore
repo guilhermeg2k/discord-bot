@@ -13,18 +13,23 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+bin/
 .vscode/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
+include/
 lib/
 lib64/
+lib64
 parts/
 sdist/
+share/
 var/
 wheels/
+pyvenv.cfg
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
