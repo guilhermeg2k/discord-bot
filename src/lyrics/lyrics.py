@@ -9,6 +9,7 @@ from src.utils import split_str_by_len
 
 
 class Lyrics():
+
     def __init__(self, bot) -> None:
         self.__genius_token = getenv('GENIUS_TOKEN')
         self.bot = bot
@@ -17,31 +18,40 @@ class Lyrics():
         self.__genius = None
 
         try:
-            self.__genius = Genius(self.__genius_token, skip_non_songs=True, excluded_terms=[
-                "(Remix)", "(Live)"], remove_section_headers=True, verbose=True)
+            self.__genius = Genius(self.__genius_token,
+                                   skip_non_songs=True,
+                                   excluded_terms=["(Remix)", "(Live)"],
+                                   remove_section_headers=True,
+                                   verbose=True)
         except HTTPError as e:
             self.logger.warning(
-                f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}')
+                f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}'
+            )
         except Timeout:
             self.logger.warning(f'Timeout')
-        self.__genius = Genius(self.__genius_token, skip_non_songs=True, excluded_terms=[
-            "(Remix)", "(Live)"], remove_section_headers=True, verbose=True)
+        self.__genius = Genius(self.__genius_token,
+                               skip_non_songs=True,
+                               excluded_terms=["(Remix)", "(Live)"],
+                               remove_section_headers=True,
+                               verbose=True)
 
-    async def search_and_send(self, ctx: Context, search_text: str = None) -> None:
+    async def search_and_send(self,
+                              ctx: Context,
+                              search_text: str = None) -> None:
         """
-        Send lyrics from the current song or from a search text using Genius API.
+        Send lyrics from the current song
+        or from a search text using Genius API.
         """
 
         if search_text is None:
-            self.bot.loop.create_task(
-                self.send_current_song_lyrics(ctx)
-            )
+            self.bot.loop.create_task(self.send_current_song_lyrics(ctx))
         else:
             self.bot.loop.create_task(
-                self.send_song_lyrics(ctx, song_title=search_text)
-            )
+                self.send_song_lyrics(ctx, song_title=search_text))
 
-    async def get_song_with_lyrics(self, song_title: str = None, song_artist: str = None) -> str:
+    async def get_song_with_lyrics(self,
+                                   song_title: str = None,
+                                   song_artist: str = None) -> str:
         """
         Get song lyrics by song title
         """
@@ -59,7 +69,8 @@ class Lyrics():
                     song = self.__genius.search_song(song_title)
         except HTTPError as e:
             self.logger.warning(
-                f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}')
+                f'Erro HTTP de status: {e.args[0]} com a mensagem: {e.args[1]}'
+            )
         except Timeout:
             self.logger.warning(f'Timeout')
             return await self.get_song_with_lyrics(song_title, song_artist)
@@ -80,22 +91,23 @@ class Lyrics():
             song_title = current_song.title
         song_title = scape_song_title(song_title)
         self.logger.info(f'Song Title: {song_title}')
-        await self.send_song_lyrics(ctx, song_title , current_song.artist)
+        await self.send_song_lyrics(ctx, song_title, current_song.artist)
 
-    async def send_song_lyrics(self, ctx: Context, song_title: str, song_artist: str = None) -> None:
+    async def send_song_lyrics(self,
+                               ctx: Context,
+                               song_title: str,
+                               song_artist: str = None) -> None:
         """
         Send song lyrics.
         """
         if song_artist:
             embed_msg_title = f":mag_right: **Procurando letra da música**: `{song_title}` by `{song_artist}`"
-            searching_embed_msg = Embed(title=embed_msg_title,
-                                        color=0x550a8a)
+            searching_embed_msg = Embed(title=embed_msg_title, color=0x550a8a)
             await ctx.respond(embed=searching_embed_msg)
             song = await self.get_song_with_lyrics(song_title, song_artist)
         else:
             embed_msg_title = f":mag_right: **Procurando letra da música**: `{song_title}`"
-            searching_embed_msg = Embed(title=embed_msg_title,
-                                        color=0x550a8a)
+            searching_embed_msg = Embed(title=embed_msg_title, color=0x550a8a)
             await ctx.respond(embed=searching_embed_msg)
             song = await self.get_song_with_lyrics(song_title)
 
@@ -104,23 +116,28 @@ class Lyrics():
 
         paginated_lyrics = split_str_by_len(song.lyrics.strip(), 4000)
         pages = len(paginated_lyrics)
-    
+
         if song and song.lyrics and pages <= 10:
-            self.logger.info(
-                f'O bot enviou a lyrics ao canal')
-            lyrics_embed_msg = Embed(title=f":pencil: **Lyrics**",
-                                     description=f"**{song.title} by {song.artist}**\n\n{(paginated_lyrics[0])}",
-                                     color=0x550a8a)
-            await ctx.edit(embed=lyrics_embed_msg, delete_after=self.bot.delete_time * 5)
+            self.logger.info(f'O bot enviou a lyrics ao canal')
+            lyrics_embed_msg = Embed(
+                title=f":pencil: **Lyrics**",
+                description=
+                f"**{song.title} by {song.artist}**\n\n{(paginated_lyrics[0])}",
+                color=0x550a8a)
+            await ctx.edit(embed=lyrics_embed_msg,
+                           delete_after=self.bot.delete_time * 5)
             if pages > 1:
                 page = 1
                 while page < pages:
-                    lyrics_embed_msg = Embed(description=paginated_lyrics[page],
-                                             color=0x550a8a)
-                    await ctx.send_followup(embed=lyrics_embed_msg, delete_after=self.bot.delete_time * 5)
+                    lyrics_embed_msg = Embed(
+                        description=paginated_lyrics[page], color=0x550a8a)
+                    await ctx.send_followup(embed=lyrics_embed_msg,
+                                            delete_after=self.bot.delete_time *
+                                            5)
                     page += 1
         else:
             self.logger.info(f'O bot não encontrou a lyrics.')
             lyrics_embed_msg = Embed(title=f":x: **Lyrics não encontrada**",
                                      color=0xeb2828)
-            await ctx.edit(embed=lyrics_embed_msg, delete_after=self.bot.delete_time)
+            await ctx.edit(embed=lyrics_embed_msg,
+                           delete_after=self.bot.delete_time)

@@ -1,6 +1,8 @@
 import logging
 
+
 class Logger:
+
     def __init__(self) -> None:
         # create logger
         self.logger = logging.getLogger('bot-logger')
@@ -11,16 +13,19 @@ class Logger:
         ch.setLevel(logging.INFO)
 
         # create formatter
-        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(filename)s:%(funcName)s ->  %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter(
+            '%(asctime)s [%(levelname)s] %(filename)s:%(funcName)s ->  %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
 
         # add formatter to ch
         ch.setFormatter(formatter)
 
         # add ch to logger
         self.logger.addHandler(ch)
-    
+
     def get_logger(self) -> logging.Logger:
         return self.logger
+
 
 '''
 Exemplos de logs:

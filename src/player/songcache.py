@@ -9,6 +9,7 @@ from datetime import date
 
 
 class SongCache():
+
     def __init__(self, logger: Logger) -> None:
         self.logger = logger
         self.logger.info('Inicializando cache.')
@@ -21,15 +22,15 @@ class SongCache():
         self.MAX_SIZE = getenv('MAX_CACHE_SIZE', 100)
 
     def add_song(self, song: Song) -> None:
-        #if self.queue_size() + 1 < self.MAX_SIZE:
+        # if self.queue_size() + 1 < self.MAX_SIZE:
         self.logger.info(f'Adicionando musica {song.id} ao cache.')
         self.cache[song.id] = song
         self.save()
-        #else:
+        # else:
         #    self.logger.warn('Cache cheia.')
         #    raise NotImplemented('Fazer')
 
-    def increment_plays(self, id:str):
+    def increment_plays(self, id: str):
         if id in self.cache:
             self.cache[id].times_played += 1
             self.cache[id].last_played = date.today().strftime("%Y-%m-%d")
@@ -91,8 +92,9 @@ class SongCache():
                     f'Musica {id} nao consta no cache, baixando informacoes.')
                 yt = YoutubeDL()
                 song_info = yt.extract_info(url, download=False)
-                song_info['path'] = f'{self.songs_path}/{song_info["id"]}.{song_info["ext"]}'
-                song_info['url']=url
+                song_info[
+                    'path'] = f'{self.songs_path}/{song_info["id"]}.{song_info["ext"]}'
+                song_info['url'] = url
 
                 new_song = Song(song_info['id'], song_info)
 

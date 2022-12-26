@@ -21,8 +21,8 @@ def download_song(folder: str, url: str, requester: Member) -> Song:
         ydl = yt_dlp.YoutubeDL(ydl_opts)
         song_info = ydl.extract_info(url, download=False)
         song_info['path'] = f'{folder}/{song_info["id"]}.{song_info["ext"]}'
-        song_info['url']=url
-        
+        song_info['url'] = url
+
         new_song = Song(song_info['id'], song_info)
 
         ydl.download([url])
@@ -67,18 +67,19 @@ def get_song_url_from_spotify(url: str) -> str:
     try:
         html = urllib.request.urlopen(url)
         html_decoded = html.read().decode()
-        song_info = re.findall(
-            r"<h1.*>.*<span.*>(.*)</span.*></h1>", html_decoded)
+        song_info = re.findall(r"<h1.*>.*<span.*>(.*)</span.*></h1>",
+                               html_decoded)
         song_url = get_song_youtube_url(f'{song_info[0]} {song_info[1]}')
         return song_url
     except:
         raise Exception(
-            f'Failed to get a video url from a spotify track with url: "{url}"')
+            f'Failed to get a video url from a spotify track with url: "{url}"'
+        )
 
 
 def get_youtube_playlist_songlist(url: str) -> List[str]:
     """
-        Returns an array of videos urls 
+        Returns an array of videos urls
         from a youtube playlist url
     """
     try:
