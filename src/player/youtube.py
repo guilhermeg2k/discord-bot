@@ -36,7 +36,7 @@ def get_song_url(song: str) -> str:
         Search for a song on youtube
         and return its url
     """
-    is_spotify_url = re.match("https://open.spotify.com/track/.*", song)
+    is_spotify_url = re.match(r"https:\/\/open\.spotify\.com\/track\/.*", song)
     if is_spotify_url:
         return get_song_url_from_spotify(song)
     else:
