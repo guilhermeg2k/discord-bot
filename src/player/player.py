@@ -290,10 +290,12 @@ class Player:
                 self.logger.info(f"O bot embaralhou a fila.")
 
     async def handle_song_request(self, play_text: str, ctx: Context) -> None:
-        is_youtube_playlist = match("https://www.youtube.com/playlist*",
-                                    play_text)
+        is_youtube_playlist = match(
+            r"https:\/\/www\.youtube\.com\/playlist.*|https:\/\/youtube\.com\/playlist.*",
+            play_text)
         is_youtube_link = match(
-            "https://www.youtube.com/watch*|https://youtu.be/*", play_text)
+            r"https:\/\/www\.youtube\.com\/watch.*|https:\/\/youtu.be\/.*",
+            play_text)
         if is_youtube_playlist:
             await self.add_playlist(play_text, ctx)
         elif is_youtube_link:
@@ -376,7 +378,7 @@ class Player:
             self.logger.info("O bot adicionou a música na fila de reprodução.")
         else:
             self.playing = True
-            await ctx.edit(delete_after=3)
+            await ctx.edit(delete_after=self.bot.delete_time)
             self.bot.loop.create_task(self.play_queue(ctx))
 
     def get_queue(self, ctx: Context) -> Queue:

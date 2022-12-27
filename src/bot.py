@@ -54,7 +54,8 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg,
+                                  delete_after=self.delete_time)
 
         @self.command(description="Pausar reprodutor.")
         async def pause(ctx: commands.Context):
