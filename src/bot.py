@@ -1,19 +1,20 @@
 import traceback
 import os
 
-from discord import Activity, ActivityType, Embed, Option, Bot
+from discord import Activity, ActivityType, Embed, Option, Bot, Member, Intents, Guild, Message, VoiceState
 from discord.ext import commands
 from dotenv import load_dotenv
 
 from src.logger import Logger
 from src.lyrics.lyrics import Lyrics
 from src.player.player import Player
-
+from src.db.sqlite import Database
+from src.db.bot_sql import EVENT_TYPES
 
 class Bot(Bot):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(intents=Intents.all())
         load_dotenv()
         self.logger = Logger().get_logger()
         self.logger.info("Iniciando Bot.")
@@ -21,14 +22,132 @@ class Bot(Bot):
         self.delete_time = 30
         self.player = Player(bot=self)
         self.lyrics = Lyrics(bot=self)
-        self.__version__ = "0.5.0"
+        self.db = Database(self.logger)
+        self.__version__ = "0.6.0"
 
         @self.event
         async def on_ready():
             self.logger.info("Bot conectado com o Discord.")
+            self.db.check_guilds_and_users(self.guilds)
             self.loop.create_task(
                 self.change_presence(activity=Activity(
                     type=ActivityType.listening, name="no /play, tchama ♫")))
+
+        @self.event
+        async def on_presence_update(before: Member, after: Member):
+            if not after.bot:
+                event = None
+                desc = None
+                if before.status != after.status:
+                    desc = before.status.value
+                    if after.status.value == 'online':
+                        event = EVENT_TYPES.ONLINE
+                    elif after.status.value == 'idle':
+                        event = EVENT_TYPES.IDLE
+                    elif after.status.value == 'offline':
+                        event = EVENT_TYPES.OFFLINE
+                    elif after.status.value == 'dnd':
+                        event = EVENT_TYPES.DND
+                    else:
+                        self.logger.error(f'Encontrado status nao previsto: {after.status.value}')
+                if before.activity != after.activity:
+                    if not before.activity and after.activity.type.name == "playing":
+                        event = EVENT_TYPES.PLAYING_START
+                        desc = after.activity.name
+                    elif before.activity and after.activity and after.activity.type.name == "playing":
+                        event = EVENT_TYPES.PLAYING_CHANGE
+                        desc = after.activity.name
+                    elif before.activity and (not after.activity or after.activity.type.name != "playing"):
+                        event = EVENT_TYPES.PLAYING_STOP
+                    
+                self.db.insert_event(after.id, event.value, after.guild.id, desc)
+
+        @self.event
+        async def on_member_join(member: Member):
+            if not member.bot:
+                self.db.insert_event(member.id, EVENT_TYPES.JOIN.value, member.guild.id)
+
+        @self.event
+        async def on_member_remove(member: Member):
+            if not member.bot:
+                self.db.insert_event(member.id, EVENT_TYPES.LEAVE.value, member.guild.id)
+
+        @self.event
+        async def on_member_ban(guild: Guild, member: Member):
+            if not member.bot:
+                self.db.insert_event(member.id, EVENT_TYPES.BAN.value, guild.id)
+
+        @self.event
+        async def on_member_unban(guild: Guild, member: Member):
+            if not member.bot:
+                self.db.insert_event(member.id, EVENT_TYPES.UNBAN.value, guild.id)
+
+        @self.event
+        async def on_message(msg: Message):
+            if not msg.author.bot:
+                self.db.insert_event(msg.author.id, EVENT_TYPES.MESSAGE_SEND.value, msg.guild.id, msg.channel.name)
+
+        @self.event
+        async def on_message_edit(before: Message, after: Message):
+            if not after.author.bot:
+                self.db.insert_event(after.author.id, EVENT_TYPES.MESSAGE_EDIT.value, after.guild.id)
+
+        @self.event
+        async def on_message_delete(msg: Message):
+            if not msg.author.bot:
+                self.db.insert_event(msg.author.id, EVENT_TYPES.MESSAGE_DELETE.value, msg.guild.id)
+
+        @self.event
+        async def on_member_update(before: Member, after: Member):
+            if not after.bot and before.nick != after.nick:
+                self.db.insert_event(after.id, EVENT_TYPES.NICK_CHANGE.value, after.guild.id, before.nick)
+
+        @self.event
+        async def on_voice_state_update(member: Member, before: VoiceState, after: VoiceState):
+            if not member.bot:
+                event = None
+                if before.afk != after.afk:
+                    if after.afk:
+                        event = EVENT_TYPES.VOICE_AFK_START
+                    else:
+                        event = EVENT_TYPES.VOICE_AFK_STOP
+                elif before.channel != after.channel:
+                    if not before.channel or before.channel.type == "private":
+                        event = EVENT_TYPES.VOICE_CONNECT
+                    elif not after.channel:
+                        event = EVENT_TYPES.VOICE_DISCONNECT
+                    else:
+                        event = EVENT_TYPES.VOICE_MOVE
+                elif before.self_mute != after.self_mute:
+                    if after.self_mute:
+                        event = EVENT_TYPES.VOICE_MUTE_START
+                    else:
+                        event = EVENT_TYPES.VOICE_MUTE_STOP
+                elif before.self_deaf != after.self_deaf:
+                    if after.self_deaf:
+                        event = EVENT_TYPES.VOICE_DEAF_START
+                    else:
+                        event = EVENT_TYPES.VOICE_DEAF_STOP
+                elif before.self_stream != after.self_stream:
+                    if after.self_stream:
+                        event = EVENT_TYPES.STREAM_START
+                    else:
+                        event = EVENT_TYPES.STREAM_STOP
+                elif before.mute != after.mute:
+                    if after.mute:
+                        event = EVENT_TYPES.VOICE_GUILD_MUTE_START
+                    else:
+                        event = EVENT_TYPES.VOICE_GUILD_MUTE_STOP
+                elif before.deaf != after.deaf:
+                    if after.deaf:
+                        event = EVENT_TYPES.VOICE_GUILD_DEAF_START
+                    else:
+                        event = EVENT_TYPES.VOICE_GUILD_DEAF_STOP
+                    
+                if after:
+                    self.db.insert_event(member.id, event.value, member.guild.id, after.channel.name)
+                else:
+                    self.db.insert_event(member.id, event.value, member.guild.id)
 
         @self.command(
             description="Reproduzir música.",
