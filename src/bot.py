@@ -144,7 +144,10 @@ class Bot(Bot):
                     else:
                         event = EVENT_TYPES.VOICE_GUILD_DEAF_STOP
                     
-                self.db.insert_event(member.id, event.value, member.guild.id, after.channel.name)
+                if after:
+                    self.db.insert_event(member.id, event.value, member.guild.id, after.channel.name)
+                else:
+                    self.db.insert_event(member.id, event.value, member.guild.id)
 
         @self.command(
             description="Reproduzir música.",
