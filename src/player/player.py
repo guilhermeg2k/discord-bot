@@ -9,6 +9,7 @@ import traceback
 from discord import Embed, FFmpegPCMAudio
 from discord.ext.commands import Context
 from src.player.songcache import SongCache
+from src.db.bot_sql import EVENT_TYPES
 from src.player.youtube import (
     download_song,
     get_song_url,
@@ -30,15 +31,23 @@ class Player:
 
     async def play(self, ctx: Context, play_text: str) -> None:
         if ctx.author.voice is None:
-            await ctx.respond("Você não está em um canal de voz",
-                              delete_after=self.bot.delete_time)
+            await ctx.respond(
+                        embed=Embed(
+                        title=f":x: **Você não está em um canal de voz!**",
+                        color=0xEB2828),
+                        delete_after=self.bot.delete_time)
             return
 
         user_voice_channel = ctx.author.voice.channel
 
         if ctx.voice_client is not None:
             if ctx.voice_client.channel != user_voice_channel:
-                await ctx.respond("O bot já está conectado em outro canal!")
+                await ctx.respond(
+                    embed=Embed(
+                        title=f":x: **O bot já está conectado em outro canal!**",
+                        color=0xEB2828),
+                        delete_after=self.bot.delete_time
+                    )
                 return
 
         embed_msg = Embed(title=f":mag_right: **Procurando**: `{play_text}`",
@@ -87,7 +96,9 @@ class Player:
         else:
             self.bot.loop.create_task(
                 ctx.respond(
-                    "O usuário deve estar no mesmo canal do bot para desconectá-lo",
+                    embed=Embed(
+                        title=f":x: **O Usuário deve estar no mesmo canal do bot para desconectá-lo**",
+                        color=0xEB2828),
                     delete_after=self.bot.delete_time,
                 ))
 
@@ -234,7 +245,9 @@ class Player:
                     self.logger.info(
                         f"O bot removeu a música de posição {idx-1} da fila.")
                     self.bot.loop.create_task(
-                        ctx.respond("Música removida.",
+                        ctx.respond(embed=Embed(
+                                        title=f":x: **Musica removida da fila**",
+                                        color=0x169CCC),
                                     delete_after=self.bot.delete_time))
                 else:
                     embed_msg = Embed(title=f":x: **Posição inválida**",
@@ -363,6 +376,7 @@ class Player:
         queue = self.get_queue(ctx)
         queue.put(song)
         self.logger.info("Musica adicionada na fila de reproducao.")
+        self.bot.db.insert_event(ctx.author.id, EVENT_TYPES.MUSIC_PLAY.value, ctx.guild.id, id)
 
         if self.playing:
             if not playlist:

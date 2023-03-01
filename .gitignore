@@ -144,3 +144,6 @@ test_*
 
 # Project config files
 cfg/
+
+# Data files
+data/
