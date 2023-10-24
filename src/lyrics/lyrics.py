@@ -112,12 +112,12 @@ class Lyrics():
         if song_artist:
             embed_msg_title = f":mag_right: **Procurando letra da música**: `{song_title}` by `{song_artist}`"
             searching_embed_msg = Embed(title=embed_msg_title, color=0x550a8a)
-            await ctx.respond(embed=searching_embed_msg)
+            await ctx.respond(embed=searching_embed_msg, ephemeral=True)
             song = await self.get_song_with_lyrics(song_title, song_artist)
         else:
             embed_msg_title = f":mag_right: **Procurando letra da música**: `{song_title}`"
             searching_embed_msg = Embed(title=embed_msg_title, color=0x550a8a)
-            await ctx.respond(embed=searching_embed_msg)
+            await ctx.respond(embed=searching_embed_msg, ephemeral=True)
             song = await self.get_song_with_lyrics(song_title)
 
         # if msg:
@@ -142,7 +142,8 @@ class Lyrics():
                         description=paginated_lyrics[page], color=0x550a8a)
                     await ctx.send_followup(embed=lyrics_embed_msg,
                                             delete_after=self.bot.delete_time *
-                                            5)
+                                            5,
+                                            ephemeral=True)
                     page += 1
         else:
             self.logger.info(f'O bot não encontrou a lyrics.')

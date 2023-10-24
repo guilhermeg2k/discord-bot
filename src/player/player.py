@@ -8,6 +8,8 @@ import traceback
 
 from discord import Embed, FFmpegPCMAudio
 from discord.ext.commands import Context
+from discord.ui import Button, View, Modal, InputText
+from discord import ButtonStyle, Interaction
 from src.player.songcache import SongCache
 from src.db.bot_sql import EVENT_TYPES
 from src.player.youtube import (
@@ -52,7 +54,10 @@ class Player:
 
         embed_msg = Embed(title=f":mag_right: **Procurando**: `{play_text}`",
                           color=0x550A8A)
-        await ctx.respond(embed=embed_msg)
+        if ctx.message == self.player_msg:
+            await ctx.respond(embed=embed_msg, ephemeral=True, delete_after=self.bot.delete_time)
+        else:
+            await ctx.respond(embed=embed_msg, ephemeral=True)
 
         self.logger.info("Buscando a musica.")
         await self.handle_song_request(play_text, ctx)
@@ -75,7 +80,8 @@ class Player:
                 f"Duração da fila: {str(timedelta(seconds=queue_duration))}")
             self.bot.loop.create_task(
                 ctx.respond(embed=embed_msg,
-                            delete_after=self.bot.delete_time))
+                            delete_after=self.bot.delete_time,
+                            ephemeral=True))
             self.logger.info("O bot recuperou a fila de reprodução.")
         else:
             embed_msg = Embed(title="Fila vazia",
@@ -101,6 +107,52 @@ class Player:
                         color=0xEB2828),
                     delete_after=self.bot.delete_time,
                 ))
+            
+    async def btn_play_pause(self, iteraction: Interaction) -> None:
+        ctx = await self.bot.get_application_context(iteraction)
+        await iteraction.response.defer()
+        if ctx.voice_client.is_paused():
+            await self.resume(ctx)
+            self.logger.info('Player resumido pelo botão')
+        else: 
+            await self.pause(ctx)
+            self.logger.info('Player pausado pelo botão')
+        
+    async def btn_leave(self, iteraction: Interaction) -> None:
+        ctx = await self.bot.get_application_context(iteraction)
+        await iteraction.response.defer()
+        await self.leave(ctx)
+        self.logger.info('Bot removido pelo botão')
+
+    async def btn_next(self, iteraction: Interaction) -> None:
+        ctx = await self.bot.get_application_context(iteraction)
+        await iteraction.response.defer()
+        await self.next(ctx)
+        self.logger.info('Próxima música pelo botão')
+
+    async def btn_list(self, iteraction: Interaction) -> None:
+        ctx = await self.bot.get_application_context(iteraction)
+        await iteraction.response.defer()
+        await self.list(ctx)
+        self.logger.info('Listando pelo botão')
+
+    async def btn_add(self, iteraction: Interaction) -> None:
+        modal = Modal(title='Adicionar música na fila')
+        modal.add_item(InputText(
+            label='Nome ou link da música'
+        ))
+        modal.callback = self.modal_add
+        await iteraction.response.send_modal(modal)
+        self.logger.info('Modal enviada para o usuário')
+
+    async def modal_add(self, iteraction: Interaction) -> None:
+        resp = iteraction.data.get('components')
+
+        if resp and len(resp) == 1:
+            await iteraction.response.defer()
+            text = resp[0].get('components')[0].get('value')
+            ctx = await self.bot.get_application_context(iteraction)
+            await self.play(ctx, play_text=text)
 
     async def pause(self, ctx: Context) -> None:
         if ctx.author.voice is not None:
@@ -173,8 +225,6 @@ class Player:
                     self.playing = True
                     self.current_song[ctx.guild.id] = queue.get()
 
-                    # await self.bot.clear_bot_msgs_in_channel(ctx)
-
                     current_playing_song_embed_msg = Embed(
                         title=f":arrow_forward: **Reproduzindo**",
                         description=
@@ -196,14 +246,33 @@ class Player:
                         self.player_msg = await self.player_msg.edit(
                             embed=current_playing_song_embed_msg)
                     else:
+                        await self.create_btn_view()
+
                         self.player_msg = await ctx.channel.send(
-                            embed=current_playing_song_embed_msg)
+                            embed=current_playing_song_embed_msg,
+                            view=self.coltrol_view
+                        )
 
                     voice_client.play(
                         FFmpegPCMAudio(self.current_song[ctx.guild.id].path))
 
                     while voice_client.is_playing() or voice_client.is_paused(
                     ):
+                        bnt_next_disabled = self.coltrol_view.get_item('btn_next').disabled
+                        btn_list = self.coltrol_view.get_item('btn_list')
+
+                        if queue.empty():
+                            if bnt_next_disabled == False or btn_list.disabled == False:
+                                self.coltrol_view.get_item('btn_next').disabled = True
+                                self.coltrol_view.get_item('btn_list').disabled = True
+                                self.coltrol_view.get_item('btn_list').label = ""
+                                await self.player_msg.edit(view=self.coltrol_view)
+                        elif not queue.empty():
+                            if bnt_next_disabled == True or btn_list.disabled == True or str(btn_list.label) != str(queue.qsize()):
+                                self.coltrol_view.get_item('btn_next').disabled = False
+                                self.coltrol_view.get_item('btn_list').disabled = False
+                                self.coltrol_view.get_item('btn_list').label = str(queue.qsize())
+                                await self.player_msg.edit(view=self.coltrol_view)
                         await sleep(1)
 
                     self.playing = False
@@ -223,6 +292,56 @@ class Player:
             self.logger.error(error)
             await self.bot.send_exception(error, command='player')
         return
+    
+    async def create_btn_view(self) -> View:
+        self.coltrol_view = View()
+        
+        btn_play_pause = Button(
+            custom_id='btn_play_pause',
+
+            style=ButtonStyle.primary, 
+            emoji='⏯'
+        )
+
+        btn_next = Button(
+            custom_id='btn_next',
+            style=ButtonStyle.secondary,
+            disabled=True,
+            emoji='⏭'
+        )
+
+        btn_leave = Button(
+            custom_id='btn_leave',
+            style=ButtonStyle.danger, 
+            emoji='👋'
+        )
+        
+        btn_list = Button(
+            custom_id='btn_list',
+            style=ButtonStyle.secondary,
+            disabled=True,
+            emoji='📃'
+        )
+
+        btn_add = Button(
+            custom_id='btn_add',
+            style=ButtonStyle.success,
+            emoji='➕'
+        )
+
+        btn_play_pause.callback = self.btn_play_pause
+        btn_next.callback = self.btn_next
+        btn_list.callback = self.btn_list
+        btn_add.callback = self.btn_add
+        btn_leave.callback = self.btn_leave
+
+        self.coltrol_view.add_item(btn_play_pause)
+        self.coltrol_view.add_item(btn_next)
+        self.coltrol_view.add_item(btn_list)
+        self.coltrol_view.add_item(btn_add)
+        self.coltrol_view.add_item(btn_leave)
+        return self.coltrol_view
+
 
     async def remove(self, ctx: Context, idx: int) -> None:
         """
@@ -386,9 +505,18 @@ class Player:
                     color=0x550A8A,
                 )
                 embed_msg.set_footer(text=f"Posição: {len(queue.queue)}")
-                self.bot.loop.create_task(
-                    ctx.edit(embed=embed_msg,
-                             delete_after=self.bot.delete_time))
+                if ctx.message == self.player_msg:
+                    self.bot.loop.create_task(
+                        ctx.followup.send(
+                            embed=embed_msg,
+                            delete_after=self.bot.delete_time,
+                            ephemeral=True
+                        )
+                    )
+                else:
+                    self.bot.loop.create_task(
+                        ctx.edit(embed=embed_msg,
+                                delete_after=self.bot.delete_time))
             self.logger.info("O bot adicionou a música na fila de reprodução.")
         else:
             self.playing = True
