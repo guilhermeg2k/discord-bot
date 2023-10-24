@@ -181,7 +181,8 @@ class Bot(Bot):
             try:
                 await self.player.pause(ctx)
                 await ctx.respond("A música foi pausada.",
-                                  delete_after=self.delete_time)
+                                  delete_after=self.delete_time,
+                                  ephemeral=True)
                 self.logger.info("O bot pausou a música.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -192,14 +193,14 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(description="Pula para a próxima música.")
         async def next(ctx: commands.Context):
             try:
                 await self.player.next(ctx)
                 await ctx.respond("A música foi pulada.",
-                                  delete_after=self.delete_time)
+                                  delete_after=self.delete_time, ephemeral=True)
                 self.logger.info("O bot pulou a música.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -210,14 +211,14 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(description="Continuar reprodutor.")
         async def resume(ctx: commands.Context):
             try:
                 await self.player.resume(ctx)
                 await ctx.respond("A música foi resumida.",
-                                  delete_after=self.delete_time)
+                                  delete_after=self.delete_time, ephemeral=True)
                 self.logger.info("O bot voltou a reproduzir a música.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -228,14 +229,15 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(description="Força a saída do bot do canal onde está.")
         async def leave(ctx: commands.Context):
             try:
                 await self.player.leave(ctx)
                 await ctx.respond("Faleu valou!",
-                                  delete_after=self.delete_time)
+                                  delete_after=self.delete_time,
+                                  ephemeral=True)
                 self.logger.info("O bot saiu do canal de voz.")
             except Exception as err:
                 error = str(traceback.format_exc())
@@ -246,7 +248,7 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(description="Mostra a fila de reprodução.")
         async def list(ctx: commands.Context):
@@ -262,7 +264,7 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(
             description="Remover música da fila.",
@@ -287,7 +289,7 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(description="Limpa a fila de reprodução.")
         async def clear(ctx: commands.Context):
@@ -313,7 +315,7 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(description="Embaralha a fila de reprodução.")
         async def shuffle(ctx: commands.Context):
@@ -328,7 +330,7 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(
             description=
@@ -354,7 +356,7 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         @self.command(description="Latência do bot.")
         async def ping(ctx: commands.Context):
@@ -362,7 +364,7 @@ class Bot(Bot):
                 lat = int(self.latency * 1000)
                 self.logger.info(f"Latencia: {lat}ms")
                 await ctx.respond(f"Pong! ({lat}ms)",
-                                  delete_after=self.delete_time)
+                                  delete_after=self.delete_time, ephemeral=True)
             except Exception as err:
                 error = str(traceback.format_exc())
                 self.logger.error(error)
@@ -372,7 +374,7 @@ class Bot(Bot):
                     description="Desculpe,\nTive um erro interno.",
                     color=0xFF0000,
                 )
-                await ctx.respond(embed=embed_msg, delete_after=5)
+                await ctx.respond(embed=embed_msg, delete_after=5, ephemeral=True)
 
         self.run(self.token)
 
@@ -397,7 +399,7 @@ class Bot(Bot):
             color=0x550A8A,
         )
         commands_list_embed_msg.set_footer(text=f"Versão {self.__version__}")
-        await ctx.send(embed=commands_list_embed_msg)
+        await ctx.send(embed=commands_list_embed_msg, ephemeral=True)
 
     async def send_exception(self,
                              exception: str,
