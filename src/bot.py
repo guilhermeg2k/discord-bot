@@ -54,7 +54,10 @@ class Bot(Bot):
                     if not before.activity and after.activity.type.name == "playing":
                         event = EVENT_TYPES.PLAYING_START
                         desc = after.activity.name
-                    elif before.activity and after.activity and after.activity.type.name == "playing":
+                    elif before.activity and after.activity and (after.activity.type.name == "playing"):
+                        if before.activity.name == after.activity.name:
+                            # Mudou algo no mesmo jogo (Tempo de duração, mapa, personagem ...)
+                            return
                         event = EVENT_TYPES.PLAYING_CHANGE
                         desc = after.activity.name
                     elif before.activity and (not after.activity or after.activity.type.name != "playing"):
@@ -118,7 +121,7 @@ class Bot(Bot):
                         event = EVENT_TYPES.VOICE_CONNECT
                         online_at_moment = 0
                         for channel in after.channel.guild.channels:
-                            if channel.category and channel.category.name == 'Canais de Voz':
+                            if channel.category and channel.category.name in ('Canais de Voz', 'Voice Channels'):
                                 online_at_moment += len(channel.members)
                         if online_at_moment == 1:
                             self.db.insert_event(member.id, EVENT_TYPES.VOICE_CONNECT_FIRST.value, member.guild.id, after.channel.name)
@@ -126,7 +129,7 @@ class Bot(Bot):
                         event = EVENT_TYPES.VOICE_DISCONNECT
                         online_at_moment = 0
                         for channel in before.channel.guild.channels:
-                            if channel.category and channel.category.name == 'Canais de Voz':
+                            if channel.category and channel.category.name in ('Canais de Voz', 'Voice Channels'):
                                 online_at_moment += len(channel.members)
                         if online_at_moment == 0:
                             self.db.insert_event(member.id, EVENT_TYPES.VOICE_DISCONNECT_LAST.value, member.guild.id, before.channel.name)
