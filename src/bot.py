@@ -59,8 +59,10 @@ class Bot(Bot):
                         desc = after.activity.name
                     elif before.activity and (not after.activity or after.activity.type.name != "playing"):
                         event = EVENT_TYPES.PLAYING_STOP
-                    
-                self.db.insert_event(after.id, event.value, after.guild.id, desc)
+                if event == None:
+                    self.logger.warn(f'Evento não registrado: {after.activity}')
+                else:
+                    self.db.insert_event(after.id, event.value, after.guild.id, desc)
 
         @self.event
         async def on_member_join(member: Member):
@@ -114,8 +116,20 @@ class Bot(Bot):
                 elif before.channel != after.channel:
                     if not before.channel or before.channel.type == "private":
                         event = EVENT_TYPES.VOICE_CONNECT
+                        online_at_moment = 0
+                        for channel in after.channel.guild.channels:
+                            if channel.category and channel.category.name == 'Canais de Voz':
+                                online_at_moment += len(channel.members)
+                        if online_at_moment == 1:
+                            self.db.insert_event(member.id, EVENT_TYPES.VOICE_CONNECT_FIRST.value, member.guild.id, after.channel.name)
                     elif not after.channel:
                         event = EVENT_TYPES.VOICE_DISCONNECT
+                        online_at_moment = 0
+                        for channel in before.channel.guild.channels:
+                            if channel.category and channel.category.name == 'Canais de Voz':
+                                online_at_moment += len(channel.members)
+                        if online_at_moment == 0:
+                            self.db.insert_event(member.id, EVENT_TYPES.VOICE_DISCONNECT_LAST.value, member.guild.id, before.channel.name)
                     else:
                         event = EVENT_TYPES.VOICE_MOVE
                 elif before.self_mute != after.self_mute:
@@ -144,7 +158,7 @@ class Bot(Bot):
                     else:
                         event = EVENT_TYPES.VOICE_GUILD_DEAF_STOP
                     
-                if after:
+                if after.channel:
                     self.db.insert_event(member.id, event.value, member.guild.id, after.channel.name)
                 else:
                     self.db.insert_event(member.id, event.value, member.guild.id)
